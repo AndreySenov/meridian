@@ -1,10 +1,9 @@
 # Meridian
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/AndreySenov/meridian.svg)](https://pkg.go.dev/github.com/AndreySenov/meridian)
 [![Build Status](https://github.com/AndreySenov/meridian/actions/workflows/default.yml/badge.svg)](https://github.com/AndreySenov/meridian/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/AndreySenov/meridian)](https://goreportcard.com/report/github.com/AndreySenov/meridian)
 [![Latest Release](https://img.shields.io/github/v/release/AndreySenov/meridian?color=00ADD8)](https://github.com/AndreySenov/meridian/releases)
 [![License](https://img.shields.io/github/license/AndreySenov/meridian?color=00ADD8)](LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/AndreySenov/meridian.svg)](https://pkg.go.dev/github.com/AndreySenov/meridian)
 
 A Go library of concurrency utilities.
 

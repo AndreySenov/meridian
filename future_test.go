@@ -37,7 +37,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("Get prefers result over already cancelled ctx", func(t *testing.T) {
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			p := NewPromise[int]()
 			f := p.Future()
 			p.Resolve(5)

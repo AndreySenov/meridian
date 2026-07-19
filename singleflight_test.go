@@ -23,11 +23,8 @@ func TestSingleFlight(t *testing.T) {
 		errs := make([]error, n)
 
 		var wg sync.WaitGroup
-		for i := 0; i < n; i++ {
-			i := i
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+		for i := range n {
+			wg.Go(func() {
 				<-start
 				f := sf.Do("key", func() (int, error) {
 					atomic.AddInt32(&calls, 1)
@@ -35,7 +32,7 @@ func TestSingleFlight(t *testing.T) {
 					return 42, nil
 				})
 				results[i], errs[i] = f.Get(context.Background())
-			}()
+			})
 		}
 		close(start)
 		wg.Wait()
@@ -52,7 +49,7 @@ func TestSingleFlight(t *testing.T) {
 		var sf SingleFlight[string, int]
 		var calls int32
 
-		for i := 0; i < 2000; i++ {
+		for i := range 2000 {
 			f1 := sf.Do("key", func() (int, error) {
 				return int(atomic.AddInt32(&calls, 1)), nil
 			})
@@ -101,16 +98,13 @@ func TestSingleFlight(t *testing.T) {
 		const n = 10
 		errs := make([]error, n)
 		var wg sync.WaitGroup
-		for i := 0; i < n; i++ {
-			i := i
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+		for i := range n {
+			wg.Go(func() {
 				f := sf.Do("key", func() (int, error) {
 					return 0, wantErr
 				})
 				_, errs[i] = f.Get(context.Background())
-			}()
+			})
 		}
 		wg.Wait()
 
@@ -138,16 +132,13 @@ func TestSingleFlight(t *testing.T) {
 		const n = 10
 		errs := make([]error, n)
 		var wg sync.WaitGroup
-		for i := 0; i < n; i++ {
-			i := i
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+		for i := range n {
+			wg.Go(func() {
 				f := sf.Do("key", func() (int, error) {
 					panic("boom")
 				})
 				_, errs[i] = f.Get(context.Background())
-			}()
+			})
 		}
 		wg.Wait()
 
@@ -212,13 +203,9 @@ func TestSingleFlight(t *testing.T) {
 		keys := []string{"a", "b", "c"}
 
 		var wg sync.WaitGroup
-		for round := 0; round < 20; round++ {
+		for round := range 20 {
 			for _, k := range keys {
-				k := k
-				round := round
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					f := sf.Do(k, func() (int, error) {
 						if round%2 == 0 {
 							panic("fail")
@@ -226,7 +213,7 @@ func TestSingleFlight(t *testing.T) {
 						return round, nil
 					})
 					_, _ = f.Get(context.Background())
-				}()
+				})
 			}
 		}
 
@@ -391,15 +378,12 @@ func TestSingleFlight(t *testing.T) {
 		const joiners = 20
 		futures := make([]Future[int], joiners)
 		var wg sync.WaitGroup
-		for i := 0; i < joiners; i++ {
-			i := i
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+		for i := range joiners {
+			wg.Go(func() {
 				futures[i] = sf.Do("key", func() (int, error) {
 					return 0, nil
 				})
-			}()
+			})
 		}
 		wg.Wait()
 		close(release)

@@ -34,10 +34,3 @@ go.work.sum
 .fleet/
 .idea/
 .vscode/
-
-# Build paths
-bin/
-tls/
-
-# Distribution path
-dist/

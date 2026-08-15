@@ -47,6 +47,24 @@ func GetProfile(ctx context.Context, id string) (*Profile, error) {
 }
 ```
 
+An alternative way to consume the result is to register an `OnComplete` handler.
+The handler runs on the goroutine that completes the `Promise`, or immediately
+on the calling goroutine if the `Promise` is already completed.
+Multiple `OnComplete` handlers can be registered, including on different
+`Future` handles of the same `Promise`;
+the order of execution matches the order of registration.
+
+Usage example:
+```go
+f.OnComplete(func(profile *Profile, err error) {
+	if err != nil {
+		log.Printf("profile %s failed: %v", id, err)
+		return
+	}
+	cache.Put(id, profile)
+})
+```
+
 ## SingleFlight
 
 SingleFlight is an alternative to

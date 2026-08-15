@@ -21,10 +21,13 @@ func NewPromise[T any]() *Promise[T] {
 }
 
 type promiseState[T any] struct {
-	done        chan struct{}
-	value       T
-	err         error
-	joinerCount atomic.Int64
+	done               chan struct{}
+	value              T
+	err                error
+	joinerCount        atomic.Int64
+	completeMu         sync.Mutex
+	completed          bool
+	onCompleteHandlers []func(value T, err error)
 }
 
 // Resolve completes the Promise successfully with value.
@@ -40,19 +43,37 @@ func (p *Promise[T]) Reject(err error) {
 	p.Complete(zero, err)
 }
 
-// Complete completes the Promise with value and err.
-// Only the first completion takes effect: later calls to Complete, Resolve,
-// or Reject are no-ops. Safe for concurrent use.
+// Complete completes the Promise with value and err, then runs the handlers
+// registered with Future.OnComplete. Only the first completion takes effect:
+// later calls to Complete, Resolve, or Reject are no-ops. Safe for
+// concurrent use.
 func (p *Promise[T]) Complete(value T, err error) {
 	p.init()
+
+	completed := false
 	p.completeOnce.Do(func() {
-		defer close(p.state.done)
 		if err == nil {
 			p.state.value = value
 		} else {
 			p.state.err = err
 		}
+		close(p.state.done)
+		completed = true
 	})
+
+	if !completed {
+		return
+	}
+
+	p.state.completeMu.Lock()
+	p.state.completed = true
+	handlers := p.state.onCompleteHandlers
+	p.state.onCompleteHandlers = nil
+	p.state.completeMu.Unlock()
+
+	for _, handler := range handlers {
+		handler(p.state.value, p.state.err)
+	}
 }
 
 // Future returns a new read handle for the Promise's eventual result.

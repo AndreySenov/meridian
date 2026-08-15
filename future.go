@@ -38,6 +38,27 @@ func (f Future[T]) Done() <-chan struct{} {
 	return f.state.done
 }
 
+// OnComplete registers a handler for the result. If the Promise is already
+// completed, the handler runs immediately on the calling goroutine;
+// otherwise OnComplete returns at once and the handler runs on the
+// goroutine that completes the Promise, after Done is closed. Handlers run
+// one after another in registration order, so a handler should be quick and
+// must not panic: it holds up the handlers behind it, and its panic
+// surfaces on whichever goroutine runs it. Start a goroutine inside the
+// handler for slow work.
+func (f Future[T]) OnComplete(handler func(value T, err error)) {
+	f.check()
+
+	f.state.completeMu.Lock()
+	if f.state.completed {
+		f.state.completeMu.Unlock()
+		handler(f.state.value, f.state.err)
+		return
+	}
+	f.state.onCompleteHandlers = append(f.state.onCompleteHandlers, handler)
+	f.state.completeMu.Unlock()
+}
+
 // IsShared reports whether other Future handles exist for the same Promise.
 // When true, the result value is shared: if T is a pointer, slice, or map,
 // mutating the value affects the other holders, so treat it as read-only.

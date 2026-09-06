@@ -80,6 +80,17 @@ func TestFuture(t *testing.T) {
 		require.Equal(t, 9, v)
 	})
 
+	t.Run("IsDone reports completion without blocking", func(t *testing.T) {
+		p := meridian.NewPromise[int]()
+		f := p.Future()
+
+		require.False(t, f.IsDone())
+
+		p.Resolve(9)
+
+		require.True(t, f.IsDone())
+	})
+
 	t.Run("IsShared is false for a single handle", func(t *testing.T) {
 		p := meridian.NewPromise[int]()
 		f := p.Future()
@@ -185,6 +196,7 @@ func TestFuture(t *testing.T) {
 
 		var (
 			doneClosed bool
+			isDone     bool
 			gotValue   int
 			gotErr     error
 		)
@@ -194,12 +206,14 @@ func TestFuture(t *testing.T) {
 				doneClosed = true
 			default:
 			}
+			isDone = f.IsDone()
 			gotValue, gotErr = f.Get(context.Background())
 		})
 
 		p.Resolve(9)
 
 		require.True(t, doneClosed, "Done must already be closed inside the handler")
+		require.True(t, isDone, "IsDone must report completion inside the handler")
 		require.NoError(t, gotErr)
 		require.Equal(t, 9, gotValue)
 	})
@@ -264,6 +278,9 @@ func TestFuture(t *testing.T) {
 		})
 		require.PanicsWithValue(t, "Future is not initialized", func() {
 			f.Done()
+		})
+		require.PanicsWithValue(t, "Future is not initialized", func() {
+			f.IsDone()
 		})
 		require.PanicsWithValue(t, "Future is not initialized", func() {
 			f.OnComplete(func(_ int, _ error) {})

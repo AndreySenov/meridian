@@ -47,6 +47,22 @@ func ExampleFuture_Done() {
 	// Output: completed: 42
 }
 
+func ExampleFuture_IsDone() {
+	p := meridian.NewPromise[int]()
+	f := p.Future()
+
+	// IsDone checks the result without blocking.
+	fmt.Println("pending:", f.IsDone())
+
+	p.Resolve(42)
+
+	fmt.Println("completed:", f.IsDone())
+
+	// Output:
+	// pending: false
+	// completed: true
+}
+
 func ExampleFuture_OnComplete() {
 	p := meridian.NewPromise[int]()
 	f := p.Future()

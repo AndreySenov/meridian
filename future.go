@@ -67,6 +67,17 @@ func (f Future[T]) IsShared() bool {
 	return f.state.joinerCount.Load() > 1
 }
 
+// IsDone reports whether the Promise has been completed.
+func (f Future[T]) IsDone() bool {
+	f.check()
+	select {
+	case <-f.Done():
+		return true
+	default:
+		return false
+	}
+}
+
 func (f Future[T]) check() {
 	if f.state == nil {
 		panic("Future is not initialized")

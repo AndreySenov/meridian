@@ -190,6 +190,99 @@ func TestFuture(t *testing.T) {
 		require.Equal(t, []int{0, 1, 2, 3, 4}, order)
 	})
 
+	t.Run("OnComplete cancel unregisters the handler and is idempotent", func(t *testing.T) {
+		p := meridian.NewPromise[int]()
+		f := p.Future()
+
+		var cancelled, kept int
+		cancel := f.OnComplete(func(_ int, _ error) {
+			cancelled++
+		})
+		f.OnComplete(func(_ int, _ error) {
+			kept++
+		})
+
+		require.True(t, cancel())
+		require.False(t, cancel())
+
+		p.Resolve(9)
+
+		require.Zero(t, cancelled)
+		require.Equal(t, 1, kept)
+	})
+
+	t.Run("OnComplete cancel removes only its own handler, keeping the order", func(t *testing.T) {
+		p := meridian.NewPromise[int]()
+		f := p.Future()
+
+		var order []int
+		for i := range 5 {
+			cancel := f.OnComplete(func(_ int, _ error) {
+				order = append(order, i)
+			})
+			if i == 1 || i == 3 {
+				cancel()
+			}
+		}
+
+		p.Resolve(9)
+
+		require.Equal(t, []int{0, 2, 4}, order)
+	})
+
+	t.Run("OnComplete cancel is a no-op when called repeatedly or after completion", func(t *testing.T) {
+		p := meridian.NewPromise[int]()
+		f := p.Future()
+
+		var calls int
+		cancel := f.OnComplete(func(_ int, _ error) {
+			calls++
+		})
+
+		p.Resolve(9)
+		require.Equal(t, 1, calls)
+
+		require.False(t, cancel(), "the handler has already run, so nothing was stopped")
+		require.False(t, cancel(), "a repeated cancel stops nothing either")
+
+		cancelLate := f.OnComplete(func(_ int, _ error) {
+			calls++
+		})
+		require.False(t, cancelLate())
+		require.Equal(t, 2, calls)
+	})
+
+	// Run with -race
+	t.Run("OnComplete cancel is safe against concurrent completion", func(t *testing.T) {
+		for range 100 {
+			p := meridian.NewPromise[int]()
+			f := p.Future()
+
+			var calls, stopped atomic.Int64
+			cancels := make([]func() bool, 20)
+			for i := range cancels {
+				cancels[i] = f.OnComplete(func(_ int, _ error) {
+					calls.Add(1)
+				})
+			}
+
+			var wg sync.WaitGroup
+			for _, cancel := range cancels {
+				wg.Go(func() {
+					if cancel() {
+						stopped.Add(1)
+					}
+				})
+			}
+			wg.Go(func() {
+				p.Resolve(1)
+			})
+			wg.Wait()
+
+			require.Equal(t, int64(len(cancels)), calls.Load()+stopped.Load())
+		}
+	})
+
 	t.Run("OnComplete handler runs after done is closed", func(t *testing.T) {
 		p := meridian.NewPromise[int]()
 		f := p.Future()

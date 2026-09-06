@@ -2,6 +2,7 @@ package meridian
 
 import (
 	"context"
+	"slices"
 )
 
 // Future is a read handle for a Promise's eventual result, created by
@@ -46,17 +47,45 @@ func (f Future[T]) Done() <-chan struct{} {
 // must not panic: it holds up the handlers behind it, and its panic
 // surfaces on whichever goroutine runs it. Start a goroutine inside the
 // handler for slow work.
-func (f Future[T]) OnComplete(handler func(value T, err error)) {
+//
+// Calling the returned cancel function unregisters the handler and releases
+// it. It reports whether it stopped the handler from being run: false means
+// the handler has already been picked up for execution, or was cancelled
+// before. Cancelling is safe at any time and any number of times, but it
+// does not wait for a handler that is already running.
+func (f Future[T]) OnComplete(handler func(value T, err error)) (cancel func() bool) {
 	f.check()
 
 	f.state.completeMu.Lock()
 	if f.state.completed {
 		f.state.completeMu.Unlock()
 		handler(f.state.value, f.state.err)
-		return
+		return func() bool { return false }
 	}
-	f.state.onCompleteHandlers = append(f.state.onCompleteHandlers, handler)
+
+	id := f.state.nextHandlerID
+	f.state.nextHandlerID++
+	f.state.onCompleteHandlers = append(f.state.onCompleteHandlers, onCompleteHandler[T]{
+		id:     id,
+		handle: handler,
+	})
 	f.state.completeMu.Unlock()
+
+	return func() bool {
+		f.state.completeMu.Lock()
+		defer f.state.completeMu.Unlock()
+
+		for i, h := range f.state.onCompleteHandlers {
+			if h.id == id {
+				// slices.Delete zeroes the freed tail, so the handler is
+				// not kept alive by the backing array.
+				f.state.onCompleteHandlers = slices.Delete(f.state.onCompleteHandlers, i, i+1)
+				return true
+			}
+		}
+
+		return false
+	}
 }
 
 // IsShared reports whether other Future handles exist for the same Promise.

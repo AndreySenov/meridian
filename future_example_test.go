@@ -88,6 +88,29 @@ func ExampleFuture_OnComplete() {
 	// third: 42 <nil>
 }
 
+func ExampleFuture_OnComplete_cancel() {
+	p := meridian.NewPromise[int]()
+	f := p.Future()
+
+	cancel := f.OnComplete(func(value int, _ error) {
+		fmt.Println("never runs:", value)
+	})
+
+	f.OnComplete(func(value int, _ error) {
+		fmt.Println("still registered:", value)
+	})
+
+	// Unregister the first handler while the Promise is still pending.
+	// cancel reports whether it stopped the handler from being run.
+	fmt.Println("stopped:", cancel())
+
+	p.Resolve(42)
+
+	// Output:
+	// stopped: true
+	// still registered: 42
+}
+
 func ExampleFuture_IsShared() {
 	p := meridian.NewPromise[int]()
 	f1 := p.Future()

@@ -1,4 +1,4 @@
-package meridian
+package meridian_test
 
 import (
 	"context"
@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/AndreySenov/meridian"
 )
 
 func TestSingleFlight(t *testing.T) {
 	t.Run("Deduplicates concurrent calls", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 		var calls int32
 
 		const n = 50
@@ -46,7 +48,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Runs again after completion", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 		var calls int32
 
 		for i := range 2000 {
@@ -67,7 +69,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Different keys are independent", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 		var calls int32
 
 		f1 := sf.Do("a", func() (int, error) {
@@ -92,7 +94,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Error is shared by all waiters", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 		wantErr := errors.New("boom")
 
 		const n = 10
@@ -114,7 +116,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Panic is recovered and returned as error", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		f := sf.Do("key", func() (int, error) {
 			panic("boom")
@@ -127,7 +129,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Panic does not crash other waiters", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		const n = 10
 		errs := make([]error, n)
@@ -148,7 +150,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Key is usable after panic", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		f1 := sf.Do("key", func() (int, error) {
 			panic("boom")
@@ -171,7 +173,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Goexit in task unblocks waiters and frees the key", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		f1 := sf.Do("key", func() (int, error) {
 			runtime.Goexit()
@@ -199,7 +201,7 @@ func TestSingleFlight(t *testing.T) {
 
 	// Run with -race
 	t.Run("Concurrent mix of panics and successes", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 		keys := []string{"a", "b", "c"}
 
 		var wg sync.WaitGroup
@@ -231,7 +233,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Forget lets a new caller bypass a still in-flight call", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		aStarted := make(chan struct{})
 		aRelease := make(chan struct{})
@@ -261,7 +263,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Forget on unknown key is a no-op", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		require.NotPanics(t, func() {
 			sf.Forget("never-seen")
@@ -276,7 +278,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("Forget during an in-flight call does not corrupt a newer flight", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		aStarted := make(chan struct{})
 		aRelease := make(chan struct{})
@@ -322,7 +324,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("IsShared is false when nobody joins the call", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		f := sf.Do("key", func() (int, error) {
 			return 1, nil
@@ -335,7 +337,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("IsShared is true once a caller joins an in-flight call", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		started := make(chan struct{})
 		release := make(chan struct{})
@@ -364,7 +366,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("IsShared reflects concurrent joiners under -race", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		started := make(chan struct{})
 		release := make(chan struct{})
@@ -376,7 +378,7 @@ func TestSingleFlight(t *testing.T) {
 		<-started
 
 		const joiners = 20
-		futures := make([]Future[int], joiners)
+		futures := make([]meridian.Future[int], joiners)
 		var wg sync.WaitGroup
 		for i := range joiners {
 			wg.Go(func() {
@@ -401,7 +403,7 @@ func TestSingleFlight(t *testing.T) {
 	})
 
 	t.Run("A fresh call after the previous one completed is not shared", func(t *testing.T) {
-		var sf SingleFlight[string, int]
+		var sf meridian.SingleFlight[string, int]
 
 		f1 := sf.Do("key", func() (int, error) { return 1, nil })
 		_, _ = f1.Get(context.Background())

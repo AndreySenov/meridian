@@ -1,6 +1,7 @@
 package meridian
 
 import (
+	"slices"
 	"sync"
 	"sync/atomic"
 )
@@ -28,15 +29,7 @@ type promiseState[T any] struct {
 	completeMu         sync.Mutex
 	completed          bool
 	nextHandlerID      uint64
-	onCompleteHandlers []onCompleteHandler[T]
-}
-
-// onCompleteHandler pairs a handler with the identifier its cancel function
-// removes it by. Handlers are funcs, which are not comparable, so they can
-// only be found by an identifier of their own.
-type onCompleteHandler[T any] struct {
-	id     uint64
-	handle func(value T, err error)
+	onCompleteHandlers LinkedMap[uint64, func(value T, err error)]
 }
 
 // Resolve completes the Promise successfully with value.
@@ -76,12 +69,12 @@ func (p *Promise[T]) Complete(value T, err error) {
 
 	p.state.completeMu.Lock()
 	p.state.completed = true
-	handlers := p.state.onCompleteHandlers
-	p.state.onCompleteHandlers = nil
+	handlers := slices.Collect(p.state.onCompleteHandlers.Values())
+	p.state.onCompleteHandlers.Clear()
 	p.state.completeMu.Unlock()
 
 	for _, handler := range handlers {
-		handler.handle(p.state.value, p.state.err)
+		handler(p.state.value, p.state.err)
 	}
 }
 

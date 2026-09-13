@@ -2,7 +2,6 @@ package meridian
 
 import (
 	"context"
-	"slices"
 )
 
 // Future is a read handle for a Promise's eventual result, created by
@@ -65,26 +64,14 @@ func (f Future[T]) OnComplete(handler func(value T, err error)) (cancel func() b
 
 	id := f.state.nextHandlerID
 	f.state.nextHandlerID++
-	f.state.onCompleteHandlers = append(f.state.onCompleteHandlers, onCompleteHandler[T]{
-		id:     id,
-		handle: handler,
-	})
+	f.state.onCompleteHandlers.Store(id, handler)
 	f.state.completeMu.Unlock()
 
 	return func() bool {
 		f.state.completeMu.Lock()
 		defer f.state.completeMu.Unlock()
 
-		for i, h := range f.state.onCompleteHandlers {
-			if h.id == id {
-				// slices.Delete zeroes the freed tail, so the handler is
-				// not kept alive by the backing array.
-				f.state.onCompleteHandlers = slices.Delete(f.state.onCompleteHandlers, i, i+1)
-				return true
-			}
-		}
-
-		return false
+		return f.state.onCompleteHandlers.Delete(id)
 	}
 }
 

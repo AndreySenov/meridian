@@ -1,9 +1,11 @@
-package meridian
+package async
 
 import (
 	"slices"
 	"sync"
 	"sync/atomic"
+
+	"github.com/AndreySenov/meridian/linked"
 )
 
 // Promise is the writable side of an asynchronous result: it is
@@ -29,7 +31,7 @@ type promiseState[T any] struct {
 	completeMu         sync.Mutex
 	completed          bool
 	nextHandlerID      uint64
-	onCompleteHandlers LinkedMap[uint64, func(value T, err error)]
+	onCompleteHandlers linked.Map[uint64, func(value T, err error)]
 }
 
 // Resolve completes the Promise successfully with value.

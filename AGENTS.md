@@ -2,7 +2,9 @@
 
 ## Project overview
 
-Go library. The public API lives in the root package.
+Go library. The public API lives in subpackages;
+the `internal` package is not public.
+the root package holds only the module overview.
 
 ## Constraints
 - Treat exported identifiers as a stable contract and avoid breaking changes.

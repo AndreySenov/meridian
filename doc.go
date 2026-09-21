@@ -1,4 +1,8 @@
-// Package meridian provides concurrency utilities: Promise and Future to
-// handle results of asynchronous tasks, and SingleFlight to deduplicate
-// concurrent calls.
+// Module meridian contains the following packages:
+//
+// The [github.com/AndreySenov/meridian/async] package provides
+// asynchronous result primitives.
+//
+// The [github.com/AndreySenov/meridian/linked] package provides
+// linked collections.
 package meridian

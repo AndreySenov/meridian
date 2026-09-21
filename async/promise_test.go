@@ -1,4 +1,4 @@
-package meridian_test
+package async_test
 
 import (
 	"context"
@@ -8,12 +8,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian"
+	"github.com/AndreySenov/meridian/async"
 )
 
 func TestPromise(t *testing.T) {
 	t.Run("Resolve", func(t *testing.T) {
-		p := meridian.NewPromise[string]()
+		p := async.NewPromise[string]()
 		f := p.Future()
 
 		p.Resolve("hello")
@@ -25,7 +25,7 @@ func TestPromise(t *testing.T) {
 	})
 
 	t.Run("Reject", func(t *testing.T) {
-		p := meridian.NewPromise[string]()
+		p := async.NewPromise[string]()
 		f := p.Future()
 		wantErr := errors.New("boom")
 
@@ -38,7 +38,7 @@ func TestPromise(t *testing.T) {
 	})
 
 	t.Run("Complete", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		p.Complete(7, nil)
@@ -50,7 +50,7 @@ func TestPromise(t *testing.T) {
 	})
 
 	t.Run("Only first completion wins", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		p.Resolve(1)
@@ -64,7 +64,7 @@ func TestPromise(t *testing.T) {
 	})
 
 	t.Run("Multiple futures share state", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f1 := p.Future()
 		f2 := p.Future()
 
@@ -80,7 +80,7 @@ func TestPromise(t *testing.T) {
 	// Run with -race: completing under contention must leave exactly one
 	// winner, with no torn or concurrently written result.
 	t.Run("Concurrent complete has no race", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		const n = 50

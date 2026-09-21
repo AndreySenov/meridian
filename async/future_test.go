@@ -1,4 +1,4 @@
-package meridian_test
+package async_test
 
 import (
 	"context"
@@ -10,12 +10,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian"
+	"github.com/AndreySenov/meridian/async"
 )
 
 func TestFuture(t *testing.T) {
 	t.Run("Get blocks until completion", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		go func() {
@@ -30,7 +30,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("Get returns ctx err on timeout", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
@@ -43,7 +43,7 @@ func TestFuture(t *testing.T) {
 
 	t.Run("Get prefers result over already cancelled ctx", func(t *testing.T) {
 		for range 200 {
-			p := meridian.NewPromise[int]()
+			p := async.NewPromise[int]()
 			f := p.Future()
 			p.Resolve(5)
 
@@ -58,7 +58,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("Done blocks until completion then is closed", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		select {
@@ -81,7 +81,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("IsDone reports completion without blocking", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		require.False(t, f.IsDone())
@@ -92,7 +92,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("IsShared is false for a single handle", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 		p.Resolve(1)
 		_, _ = f.Get(context.Background())
@@ -101,7 +101,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("IsShared is true once a second handle is created", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f1 := p.Future()
 		f2 := p.Future()
 		p.Resolve(1)
@@ -112,7 +112,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("IsShared reflects the number of Future handles, not calls to Get", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 		p.Resolve(1)
 
@@ -124,7 +124,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete runs the handler on completion", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		var (
@@ -146,7 +146,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete passes the error to the handler", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 		wantErr := errors.New("boom")
 
@@ -161,7 +161,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete runs the handler immediately if already completed", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 		p.Resolve(9)
 
@@ -174,7 +174,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete runs every handler once, in registration order", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		var order []int
@@ -191,7 +191,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete cancel unregisters the handler and is idempotent", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		var cancelled, kept int
@@ -212,7 +212,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete cancel removes only its own handler, keeping the order", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		var order []int
@@ -231,7 +231,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete cancel is a no-op when called repeatedly or after completion", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		var calls int
@@ -255,7 +255,7 @@ func TestFuture(t *testing.T) {
 	// Run with -race
 	t.Run("OnComplete cancel is safe against concurrent completion", func(t *testing.T) {
 		for range 100 {
-			p := meridian.NewPromise[int]()
+			p := async.NewPromise[int]()
 			f := p.Future()
 
 			var calls, stopped atomic.Int64
@@ -284,7 +284,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete handler runs after done is closed", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		var (
@@ -312,7 +312,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("OnComplete handler may complete the same Promise again", func(t *testing.T) {
-		p := meridian.NewPromise[int]()
+		p := async.NewPromise[int]()
 		f := p.Future()
 
 		f.OnComplete(func(_ int, _ error) {
@@ -340,7 +340,7 @@ func TestFuture(t *testing.T) {
 	// Run with -race
 	t.Run("OnComplete is safe against concurrent completion", func(t *testing.T) {
 		for range 100 {
-			p := meridian.NewPromise[int]()
+			p := async.NewPromise[int]()
 			f := p.Future()
 
 			const handlers = 20
@@ -364,7 +364,7 @@ func TestFuture(t *testing.T) {
 	})
 
 	t.Run("A zero-value Future panics instead of misbehaving silently", func(t *testing.T) {
-		var f meridian.Future[int]
+		var f async.Future[int]
 
 		require.PanicsWithValue(t, "Future is not initialized", func() {
 			_, _ = f.Get(context.Background())

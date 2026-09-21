@@ -1,20 +1,20 @@
-package meridian
+package linked
 
 import "iter"
 
-// LinkedMap is a map that iterates over its entries in insertion order.
-// The zero value for LinkedMap is an empty map ready to use. Like a map,
-// a LinkedMap is a reference to shared data once in use: copies of it
+// Map is a map that iterates over its entries in insertion order.
+// The zero value for Map is an empty map ready to use. Like a map,
+// a Map is a reference to shared data once in use: copies of it
 // refer to the same entries.
-// A LinkedMap is not safe for concurrent use.
-type LinkedMap[K comparable, V any] struct {
-	entries map[K]linkedMapEntry[K, V]
-	keys    *LinkedList[K]
+// A Map is not safe for concurrent use.
+type Map[K comparable, V any] struct {
+	entries map[K]mapEntry[K, V]
+	keys    *List[K]
 }
 
-// NewLinkedMapSeq returns a new map holding the entries from seq.
-func NewLinkedMapSeq[K comparable, V any](seq iter.Seq2[K, V]) *LinkedMap[K, V] {
-	l := new(LinkedMap[K, V])
+// NewMapSeq returns a new map holding the entries from seq.
+func NewMapSeq[K comparable, V any](seq iter.Seq2[K, V]) *Map[K, V] {
+	l := new(Map[K, V])
 	for k, v := range seq {
 		l.Store(k, v)
 	}
@@ -23,7 +23,7 @@ func NewLinkedMapSeq[K comparable, V any](seq iter.Seq2[K, V]) *LinkedMap[K, V] 
 
 // Load returns the value stored for key and reports whether the key was
 // present.
-func (l *LinkedMap[K, V]) Load(key K) (value V, loaded bool) {
+func (l *Map[K, V]) Load(key K) (value V, loaded bool) {
 	l.init()
 
 	if existing, ok := l.entries[key]; ok {
@@ -36,18 +36,18 @@ func (l *LinkedMap[K, V]) Load(key K) (value V, loaded bool) {
 
 // Store sets the value for key; an existing key keeps its position,
 // and Store returns the value it replaced.
-func (l *LinkedMap[K, V]) Store(key K, value V) (previous V, replaced bool) {
+func (l *Map[K, V]) Store(key K, value V) (previous V, replaced bool) {
 	l.init()
 
 	if existing, ok := l.entries[key]; ok {
-		l.entries[key] = linkedMapEntry[K, V]{
+		l.entries[key] = mapEntry[K, V]{
 			value: value,
 			node:  existing.node,
 		}
 		return existing.value, true
 	}
 
-	l.entries[key] = linkedMapEntry[K, V]{
+	l.entries[key] = mapEntry[K, V]{
 		value: value,
 		node:  l.keys.PushBack(key),
 	}
@@ -56,7 +56,7 @@ func (l *LinkedMap[K, V]) Store(key K, value V) (previous V, replaced bool) {
 }
 
 // Delete removes key and reports whether it was present.
-func (l *LinkedMap[K, V]) Delete(key K) (deleted bool) {
+func (l *Map[K, V]) Delete(key K) (deleted bool) {
 	l.init()
 
 	if existing, ok := l.entries[key]; ok {
@@ -70,7 +70,7 @@ func (l *LinkedMap[K, V]) Delete(key K) (deleted bool) {
 
 // DeleteFunc removes every entry for which del returns true, calling del in
 // iteration order, and returns the number of entries removed.
-func (l *LinkedMap[K, V]) DeleteFunc(del func(key K, value V) bool) (deleted int) {
+func (l *Map[K, V]) DeleteFunc(del func(key K, value V) bool) (deleted int) {
 	l.init()
 
 	for k := range l.Keys() {
@@ -86,20 +86,20 @@ func (l *LinkedMap[K, V]) DeleteFunc(del func(key K, value V) bool) (deleted int
 }
 
 // Clear removes all entries from the map.
-func (l *LinkedMap[K, V]) Clear() {
+func (l *Map[K, V]) Clear() {
 	l.init()
 	clear(l.entries)
 	l.keys.Clear()
 }
 
 // Len returns the number of entries in the map.
-func (l *LinkedMap[K, V]) Len() int {
+func (l *Map[K, V]) Len() int {
 	l.init()
 	return l.keys.Len()
 }
 
 // IsEmpty reports whether the map has no entries.
-func (l *LinkedMap[K, V]) IsEmpty() bool {
+func (l *Map[K, V]) IsEmpty() bool {
 	l.init()
 	return l.Len() == 0
 }
@@ -107,7 +107,7 @@ func (l *LinkedMap[K, V]) IsEmpty() bool {
 // All returns an iterator over the entries in insertion order. The map may
 // be modified during iteration: an entry deleted before it is reached is skipped,
 // and one stored during iteration is visited.
-func (l *LinkedMap[K, V]) All() iter.Seq2[K, V] {
+func (l *Map[K, V]) All() iter.Seq2[K, V] {
 	l.init()
 
 	return func(yield func(K, V) bool) {
@@ -121,13 +121,13 @@ func (l *LinkedMap[K, V]) All() iter.Seq2[K, V] {
 }
 
 // Keys returns an iterator over the keys in insertion order.
-func (l *LinkedMap[K, V]) Keys() iter.Seq[K] {
+func (l *Map[K, V]) Keys() iter.Seq[K] {
 	l.init()
 	return l.keys.All()
 }
 
 // Values returns an iterator over the values in insertion order.
-func (l *LinkedMap[K, V]) Values() iter.Seq[V] {
+func (l *Map[K, V]) Values() iter.Seq[V] {
 	l.init()
 
 	return func(yield func(V) bool) {
@@ -139,14 +139,14 @@ func (l *LinkedMap[K, V]) Values() iter.Seq[V] {
 	}
 }
 
-func (l *LinkedMap[K, V]) init() {
+func (l *Map[K, V]) init() {
 	if l.entries == nil {
-		l.entries = make(map[K]linkedMapEntry[K, V])
-		l.keys = new(LinkedList[K])
+		l.entries = make(map[K]mapEntry[K, V])
+		l.keys = new(List[K])
 	}
 }
 
-type linkedMapEntry[K comparable, V any] struct {
+type mapEntry[K comparable, V any] struct {
 	value V
-	node  *LinkedListNode[K]
+	node  *Node[K]
 }

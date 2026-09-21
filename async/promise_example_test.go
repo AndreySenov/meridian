@@ -1,15 +1,15 @@
-package meridian_test
+package async_test
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	"github.com/AndreySenov/meridian"
+	"github.com/AndreySenov/meridian/async"
 )
 
 func ExamplePromise() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 
 	// The producer completes the Promise on its own goroutine, while the
 	// consumer waits for the result on another one.
@@ -24,7 +24,7 @@ func ExamplePromise() {
 }
 
 func ExamplePromise_Resolve() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 
 	// Resolve is the success shorthand: the result carries no error.
 	p.Resolve(42)
@@ -36,7 +36,7 @@ func ExamplePromise_Resolve() {
 }
 
 func ExamplePromise_Reject() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 
 	// Reject is the failure shorthand: the result carries the zero value
 	// along with the error.
@@ -49,7 +49,7 @@ func ExamplePromise_Reject() {
 }
 
 func ExamplePromise_Complete() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 
 	p.Complete(42, nil)
 

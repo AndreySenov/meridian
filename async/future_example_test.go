@@ -1,14 +1,14 @@
-package meridian_test
+package async_test
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/AndreySenov/meridian"
+	"github.com/AndreySenov/meridian/async"
 )
 
 func ExampleFuture_Get() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 	f := p.Future()
 
 	// Get reports the context error if the Promise is still pending.
@@ -29,7 +29,7 @@ func ExampleFuture_Get() {
 }
 
 func ExampleFuture_Done() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 	f := p.Future()
 
 	p.Resolve(42)
@@ -48,7 +48,7 @@ func ExampleFuture_Done() {
 }
 
 func ExampleFuture_IsDone() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 	f := p.Future()
 
 	// IsDone checks the result without blocking.
@@ -64,7 +64,7 @@ func ExampleFuture_IsDone() {
 }
 
 func ExampleFuture_OnComplete() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 	f := p.Future()
 
 	// Handlers run in registration order once the Promise is completed.
@@ -89,7 +89,7 @@ func ExampleFuture_OnComplete() {
 }
 
 func ExampleFuture_OnComplete_cancel() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 	f := p.Future()
 
 	cancel := f.OnComplete(func(value int, _ error) {
@@ -112,7 +112,7 @@ func ExampleFuture_OnComplete_cancel() {
 }
 
 func ExampleFuture_IsShared() {
-	p := meridian.NewPromise[int]()
+	p := async.NewPromise[int]()
 	f1 := p.Future()
 
 	fmt.Println("one handle:", f1.IsShared())

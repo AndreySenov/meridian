@@ -5,12 +5,12 @@
 [![License](https://img.shields.io/github/license/AndreySenov/meridian?color=00ADD8)](LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/AndreySenov/meridian.svg)](https://pkg.go.dev/github.com/AndreySenov/meridian)
 
-A Go library of concurrency utilities.
+A Go library of concurrency and collection utilities.
 
 ## Features
 
-- **Promise** and **Future**
-- **SingleFlight**
+- Package `async`: **Promise** and **Future**, **SingleFlight**
+- Package `linked`: **List**, **Map**
 
 ## Installation
 
@@ -26,16 +26,25 @@ Use the `-u` flag to update Meridian to the latest version:
 go get -u github.com/AndreySenov/meridian
 ```
 
+Then import the package you need:
+
+```go
+import (
+	"github.com/AndreySenov/meridian/async"
+	"github.com/AndreySenov/meridian/linked"
+)
+```
+
 ## Promise and Future
 
-A `Promise` and a `Future` are companion constructs used to handle results of asynchronous tasks.
-The `Promise` produces the result at most once. The `Future` provides a read-only interface to consume the result.
-Any number of `Future` handles can observe the outcome of the same `Promise`.
+`async.Promise` and `async.Future` are companion constructs used to handle results of asynchronous tasks.
+The `async.Promise` produces the result at most once. The `async.Future` provides a read-only interface to consume the result.
+Any number of `async.Future` handles can observe the outcome of the same `async.Promise`.
 
 Usage example:
 ```go
 func GetProfile(ctx context.Context, id string) (*Profile, error) {
-	p := meridian.NewPromise[*Profile]()
+	p := async.NewPromise[*Profile]()
 
 	go func() {
 		r, err := fetchProfileFromDB(id)
@@ -48,10 +57,10 @@ func GetProfile(ctx context.Context, id string) (*Profile, error) {
 ```
 
 An alternative way to consume the result is to register an `OnComplete` handler.
-The handler runs on the goroutine that completes the `Promise`, or immediately
-on the calling goroutine if the `Promise` is already completed.
+The handler runs on the goroutine that completes the `async.Promise`, or immediately
+on the calling goroutine if the `async.Promise` is already completed.
 Multiple `OnComplete` handlers can be registered, including on different
-`Future` handles of the same `Promise`;
+`async.Future` handles of the same `Promise`;
 the order of execution matches the order of registration.
 
 Usage example:
@@ -67,7 +76,7 @@ f.OnComplete(func(profile *Profile, err error) {
 
 ## SingleFlight
 
-SingleFlight is an alternative to
+`async.SingleFlight` is an alternative to
 [golang.org/x/sync/singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight)
 with generic keys and values.
 
@@ -75,7 +84,7 @@ While a task for a key is in flight, every `Do` call with that key joins it and
 receives the same result instead of running its own task:
 
 ```go
-var flights meridian.SingleFlight[string, *Profile]
+var flights async.SingleFlight[string, *Profile]
 
 func LoadProfile(ctx context.Context, id string) (*Profile, error) {
 	future := flights.Do(id, func() (*Profile, error) {
@@ -85,9 +94,31 @@ func LoadProfile(ctx context.Context, id string) (*Profile, error) {
 }
 ```
 
+## List and Map
+
+A `linked.List` is a doubly linked list, a typed alternative to `container/list`.
+A `linked.Map` is a map that iterates over its entries in insertion order.
+Both are ready to use as zero values.
+
+Usage example:
+```go
+l := linked.NewList("a", "b", "c")
+l.MoveToFront(l.Back())
+fmt.Println(l.ToSlice()) // [c a b]
+
+var m linked.Map[string, int]
+m.Store("first", 1)
+m.Store("second", 2)
+for name, n := range m.All() {
+	fmt.Println(name, n) // first 1, then second 2
+}
+```
+
 ## Documentation
 
-See the [package documentation](https://pkg.go.dev/github.com/AndreySenov/meridian) for the full API reference.
+See the package documentation for the full API reference:
+[async](https://pkg.go.dev/github.com/AndreySenov/meridian/async),
+[linked](https://pkg.go.dev/github.com/AndreySenov/meridian/linked).
 
 ## License
 

@@ -1,14 +1,14 @@
-package meridian_test
+package async_test
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/AndreySenov/meridian"
+	"github.com/AndreySenov/meridian/async"
 )
 
 func ExampleSingleFlight_Do() {
-	var flights meridian.SingleFlight[string, int]
+	var flights async.SingleFlight[string, int]
 
 	calls := 0
 	task := func() (int, error) {
@@ -33,7 +33,7 @@ func ExampleSingleFlight_Do() {
 }
 
 func ExampleSingleFlight_Forget() {
-	var flights meridian.SingleFlight[string, int]
+	var flights async.SingleFlight[string, int]
 
 	calls := 0
 	task := func() (int, error) {

@@ -1,4 +1,4 @@
-package meridian_test
+package linked_test
 
 import (
 	"reflect"
@@ -7,21 +7,21 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian"
+	"github.com/AndreySenov/meridian/linked"
 )
 
 // copyList returns a shallow copy of l made through reflection, which the
-// copylocks vet check does not see: the copy is exactly what LinkedList
+// copylocks vet check does not see: the copy is exactly what List
 // guards against, and these tests exercise that guard.
-func copyList(l *meridian.LinkedList[int]) *meridian.LinkedList[int] {
-	c := new(meridian.LinkedList[int])
+func copyList(l *linked.List[int]) *linked.List[int] {
+	c := new(linked.List[int])
 	reflect.ValueOf(c).Elem().Set(reflect.ValueOf(l).Elem())
 	return c
 }
 
-func TestLinkedList(t *testing.T) {
+func TestList(t *testing.T) {
 	t.Run("Zero value is an empty list", func(t *testing.T) {
-		var l meridian.LinkedList[int]
+		var l linked.List[int]
 
 		require.True(t, l.IsEmpty())
 		require.Zero(t, l.Len())
@@ -31,18 +31,18 @@ func TestLinkedList(t *testing.T) {
 		require.Empty(t, l.ToSliceBackward())
 	})
 
-	t.Run("NewLinkedListSeq collects an iterator in order", func(t *testing.T) {
-		l := meridian.NewLinkedListSeq(slices.Values([]int{1, 2, 3}))
+	t.Run("NewListSeq collects an iterator in order", func(t *testing.T) {
+		l := linked.NewListSeq(slices.Values([]int{1, 2, 3}))
 		require.Equal(t, []int{1, 2, 3}, l.ToSlice())
 		require.Equal(t, 3, l.Len())
 
-		require.Equal(t, []int{3, 2, 1}, meridian.NewLinkedListSeq(l.Backward()).ToSlice())
+		require.Equal(t, []int{3, 2, 1}, linked.NewListSeq(l.Backward()).ToSlice())
 
-		require.True(t, meridian.NewLinkedListSeq(slices.Values([]int{})).IsEmpty())
+		require.True(t, linked.NewListSeq(slices.Values([]int{})).IsEmpty())
 	})
 
 	t.Run("PushBack appends in order", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 
 		require.Equal(t, []int{1, 2, 3}, l.ToSlice())
 		require.Equal(t, []int{3, 2, 1}, l.ToSliceBackward())
@@ -53,7 +53,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("PushFront prepends in order", func(t *testing.T) {
-		var l meridian.LinkedList[int]
+		var l linked.List[int]
 		l.PushFront(1)
 		l.PushFront(2)
 		l.PushFront(3)
@@ -65,7 +65,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("PopFront and PopBack take values from the ends", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3, 4)
+		l := linked.NewList(1, 2, 3, 4)
 
 		v, ok := l.PopFront()
 		require.True(t, ok)
@@ -80,7 +80,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("PopFront and PopBack report an empty list", func(t *testing.T) {
-		l := meridian.NewLinkedList(1)
+		l := linked.NewList(1)
 
 		_, ok := l.PopBack()
 		require.True(t, ok)
@@ -96,7 +96,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("A single node is both front and back", func(t *testing.T) {
-		var l meridian.LinkedList[int]
+		var l linked.List[int]
 		node := l.PushFront(1)
 
 		require.Same(t, node, l.Front())
@@ -107,7 +107,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Nodes link to their neighbours", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 		first, second, third := l.Front(), l.Front().Next(), l.Back()
 
 		require.Nil(t, first.Previous())
@@ -119,7 +119,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("InsertBefore and InsertAfter", func(t *testing.T) {
-		l := meridian.NewLinkedList(2)
+		l := linked.NewList(2)
 
 		front := l.InsertBefore(1, l.Front())
 		back := l.InsertAfter(3, l.Back())
@@ -134,8 +134,8 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Insert relative to a nil or foreign mark is rejected", func(t *testing.T) {
-		l := meridian.NewLinkedList(1)
-		other := meridian.NewLinkedList(9)
+		l := linked.NewList(1)
+		other := linked.NewList(9)
 
 		require.Nil(t, l.InsertBefore(0, nil))
 		require.Nil(t, l.InsertAfter(0, nil))
@@ -146,7 +146,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Remove from the front, the back, and the middle", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3, 4)
+		l := linked.NewList(1, 2, 3, 4)
 
 		l.Remove(l.Front())
 		require.Equal(t, []int{2, 3, 4}, l.ToSlice())
@@ -160,7 +160,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Removing the only node empties the list", func(t *testing.T) {
-		var l meridian.LinkedList[int]
+		var l linked.List[int]
 		node := l.PushBack(1)
 
 		l.Remove(node)
@@ -175,7 +175,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("A removed node is detached", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 		node := l.Front().Next()
 
 		l.Remove(node)
@@ -186,12 +186,12 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Removing twice or removing a foreign node is a no-op", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2)
+		l := linked.NewList(1, 2)
 		node := l.Front()
 
 		l.Remove(node)
 		l.Remove(node)
-		l.Remove(meridian.NewLinkedList(9).Front())
+		l.Remove(linked.NewList(9).Front())
 		l.Remove(nil)
 
 		require.Equal(t, []int{2}, l.ToSlice())
@@ -199,7 +199,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Clear empties the list and detaches every node", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 		first, last := l.Front(), l.Back()
 
 		l.Clear()
@@ -222,18 +222,18 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Clear on an empty list is a no-op", func(t *testing.T) {
-		var l meridian.LinkedList[int]
+		var l linked.List[int]
 
 		require.NotPanics(t, l.Clear)
 		require.True(t, l.IsEmpty())
 	})
 
 	t.Run("A copy of a used list panics when used", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 		c := copyList(l)
 		node := l.Front()
 
-		const msg = "LinkedList must not be copied after first use"
+		const msg = "List must not be copied after first use"
 		require.PanicsWithValue(t, msg, func() { c.PushBack(4) })
 		require.PanicsWithValue(t, msg, func() { c.PushFront(0) })
 		require.PanicsWithValue(t, msg, func() { c.PopFront() })
@@ -268,11 +268,11 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("A list may be copied while it holds no nodes", func(t *testing.T) {
-		c := copyList(new(meridian.LinkedList[int]))
+		c := copyList(new(linked.List[int]))
 		c.PushBack(1)
 		require.Equal(t, []int{1}, c.ToSlice())
 
-		used := meridian.NewLinkedList(1, 2)
+		used := linked.NewList(1, 2)
 		used.Clear()
 		d := copyList(used)
 		d.PushBack(3)
@@ -281,7 +281,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("MoveToFront and MoveToBack", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 		middle := l.Front().Next()
 
 		l.MoveToFront(middle)
@@ -294,8 +294,8 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Moving a node already at the target end or a foreign node is a no-op", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2)
-		other := meridian.NewLinkedList(9)
+		l := linked.NewList(1, 2)
+		other := linked.NewList(9)
 
 		l.MoveToFront(l.Front())
 		l.MoveToBack(l.Back())
@@ -307,7 +307,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Moving the only node keeps the list intact", func(t *testing.T) {
-		var l meridian.LinkedList[int]
+		var l linked.List[int]
 		node := l.PushBack(1)
 
 		l.MoveToFront(node)
@@ -319,7 +319,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("MoveBefore and MoveAfter reposition a node", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3, 4)
+		l := linked.NewList(1, 2, 3, 4)
 		first, second, third, fourth := l.Front(), l.Front().Next(), l.Back().Previous(), l.Back()
 
 		l.MoveBefore(fourth, second)
@@ -340,7 +340,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Moving a node next to its current neighbour keeps the order", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 		first, second := l.Front(), l.Front().Next()
 
 		l.MoveBefore(first, second)
@@ -351,9 +351,9 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("MoveBefore and MoveAfter with the node itself, a foreign node, or nil are no-ops", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 		middle := l.Front().Next()
-		foreign := meridian.NewLinkedList(9).Front()
+		foreign := linked.NewList(9).Front()
 
 		l.MoveBefore(middle, middle)
 		l.MoveAfter(middle, middle)
@@ -367,7 +367,7 @@ func TestLinkedList(t *testing.T) {
 		require.Same(t, middle, l.Front().Next())
 		require.NotSame(t, middle, middle.Next())
 
-		var single meridian.LinkedList[int]
+		var single linked.List[int]
 		only := single.PushBack(1)
 		single.MoveAfter(only, only)
 		require.Equal(t, []int{1}, single.ToSlice())
@@ -375,39 +375,39 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("PushBackList and PushFrontList append another list", func(t *testing.T) {
-		l := meridian.NewLinkedList(3, 4)
+		l := linked.NewList(3, 4)
 
-		l.PushBackList(meridian.NewLinkedList(5, 6))
-		l.PushFrontList(meridian.NewLinkedList(1, 2))
+		l.PushBackList(linked.NewList(5, 6))
+		l.PushFrontList(linked.NewList(1, 2))
 
 		require.Equal(t, []int{1, 2, 3, 4, 5, 6}, l.ToSlice())
 		require.Equal(t, 6, l.Len())
 	})
 
 	t.Run("PushBackList and PushFrontList tolerate nil and empty lists", func(t *testing.T) {
-		l := meridian.NewLinkedList(1)
+		l := linked.NewList(1)
 
 		l.PushBackList(nil)
 		l.PushFrontList(nil)
-		l.PushBackList(new(meridian.LinkedList[int]))
-		l.PushFrontList(new(meridian.LinkedList[int]))
+		l.PushBackList(new(linked.List[int]))
+		l.PushFrontList(new(linked.List[int]))
 
 		require.Equal(t, []int{1}, l.ToSlice())
 	})
 
 	t.Run("A list can be appended to itself", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2)
+		l := linked.NewList(1, 2)
 		l.PushBackList(l)
 		require.Equal(t, []int{1, 2, 1, 2}, l.ToSlice())
 
-		l = meridian.NewLinkedList(2, 1)
+		l = linked.NewList(2, 1)
 		l.PushFrontList(l)
 		require.Equal(t, []int{2, 1, 2, 1}, l.ToSlice())
 		require.Equal(t, 4, l.Len())
 	})
 
 	t.Run("Iteration stops early on break", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 
 		var seen []int
 		for v := range l.All() {
@@ -427,8 +427,8 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Iteration survives removing the current node", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3, 4)
-		nodes := map[int]*meridian.LinkedListNode[int]{}
+		l := linked.NewList(1, 2, 3, 4)
+		nodes := map[int]*linked.Node[int]{}
 		for n := range l.Nodes() {
 			nodes[n.Value()] = n
 		}
@@ -441,8 +441,8 @@ func TestLinkedList(t *testing.T) {
 		require.Equal(t, []int{1, 2, 3, 4}, seen)
 		require.True(t, l.IsEmpty())
 
-		l = meridian.NewLinkedList(1, 2, 3, 4)
-		nodes = map[int]*meridian.LinkedListNode[int]{}
+		l = linked.NewList(1, 2, 3, 4)
+		nodes = map[int]*linked.Node[int]{}
 		for n := range l.Nodes() {
 			nodes[n.Value()] = n
 		}
@@ -457,7 +457,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Iteration reflects removals and insertions ahead of the current node", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3, 4)
+		l := linked.NewList(1, 2, 3, 4)
 		second := l.Front().Next()
 
 		var seen []int
@@ -470,7 +470,7 @@ func TestLinkedList(t *testing.T) {
 		}
 		require.Equal(t, []int{1, 9, 3, 4}, seen)
 
-		l = meridian.NewLinkedList(1, 2, 3, 4)
+		l = linked.NewList(1, 2, 3, 4)
 		third := l.Back().Previous()
 
 		seen = nil
@@ -485,7 +485,7 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Iteration never yields a node removed together with the current one", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3, 4)
+		l := linked.NewList(1, 2, 3, 4)
 		first, second := l.Front(), l.Front().Next()
 
 		var seen []int
@@ -498,7 +498,7 @@ func TestLinkedList(t *testing.T) {
 		}
 		require.Equal(t, []int{1}, seen)
 
-		l = meridian.NewLinkedList(1, 2, 3, 4)
+		l = linked.NewList(1, 2, 3, 4)
 		last, penultimate := l.Back(), l.Back().Previous()
 
 		seen = nil
@@ -513,24 +513,24 @@ func TestLinkedList(t *testing.T) {
 	})
 
 	t.Run("Nodes yields the nodes themselves in both directions", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3)
+		l := linked.NewList(1, 2, 3)
 		first, second, third := l.Front(), l.Front().Next(), l.Back()
 
-		var nodes []*meridian.LinkedListNode[int]
+		var nodes []*linked.Node[int]
 		for n := range l.Nodes() {
 			nodes = append(nodes, n)
 		}
-		require.Equal(t, []*meridian.LinkedListNode[int]{first, second, third}, nodes)
+		require.Equal(t, []*linked.Node[int]{first, second, third}, nodes)
 
 		nodes = nil
 		for n := range l.NodesBackward() {
 			nodes = append(nodes, n)
 		}
-		require.Equal(t, []*meridian.LinkedListNode[int]{third, second, first}, nodes)
+		require.Equal(t, []*linked.Node[int]{third, second, first}, nodes)
 	})
 
 	t.Run("The list stays consistent after removing nodes during iteration", func(t *testing.T) {
-		l := meridian.NewLinkedList(1, 2, 3, 4, 5)
+		l := linked.NewList(1, 2, 3, 4, 5)
 		for n := range l.Nodes() {
 			if n.Value()%2 == 0 {
 				l.Remove(n)

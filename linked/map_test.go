@@ -1,4 +1,4 @@
-package meridian_test
+package linked_test
 
 import (
 	"iter"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian"
+	"github.com/AndreySenov/meridian/linked"
 )
 
 type pair struct {
@@ -15,7 +15,7 @@ type pair struct {
 	value int
 }
 
-func pairs(m *meridian.LinkedMap[string, int]) []pair {
+func pairs(m *linked.Map[string, int]) []pair {
 	var out []pair
 	for k, v := range m.All() {
 		out = append(out, pair{k, v})
@@ -23,8 +23,8 @@ func pairs(m *meridian.LinkedMap[string, int]) []pair {
 	return out
 }
 
-func newMap(values ...pair) *meridian.LinkedMap[string, int] {
-	m := new(meridian.LinkedMap[string, int])
+func newMap(values ...pair) *linked.Map[string, int] {
+	m := new(linked.Map[string, int])
 	for _, p := range values {
 		m.Store(p.key, p.value)
 	}
@@ -41,9 +41,9 @@ func pairSeq(values ...pair) iter.Seq2[string, int] {
 	}
 }
 
-func TestLinkedMap(t *testing.T) {
+func TestMap(t *testing.T) {
 	t.Run("Zero value is an empty map", func(t *testing.T) {
-		var m meridian.LinkedMap[string, int]
+		var m linked.Map[string, int]
 
 		v, loaded := m.Load("a")
 		require.False(t, loaded)
@@ -56,30 +56,30 @@ func TestLinkedMap(t *testing.T) {
 		require.Empty(t, slices.Collect(m.Values()))
 	})
 
-	t.Run("NewLinkedMapSeq collects an iterator in order", func(t *testing.T) {
-		m := meridian.NewLinkedMapSeq(pairSeq(pair{"c", 3}, pair{"a", 1}, pair{"b", 2}))
+	t.Run("NewMapSeq collects an iterator in order", func(t *testing.T) {
+		m := linked.NewMapSeq(pairSeq(pair{"c", 3}, pair{"a", 1}, pair{"b", 2}))
 
 		require.Equal(t, []pair{{"c", 3}, {"a", 1}, {"b", 2}}, pairs(m))
 		require.Equal(t, 3, m.Len())
 
-		indexed := meridian.NewLinkedMapSeq(slices.All([]string{"x", "y"}))
+		indexed := linked.NewMapSeq(slices.All([]string{"x", "y"}))
 		require.Equal(t, []int{0, 1}, slices.Collect(indexed.Keys()))
 		require.Equal(t, []string{"x", "y"}, slices.Collect(indexed.Values()))
 
-		require.True(t, meridian.NewLinkedMapSeq(pairSeq()).IsEmpty())
+		require.True(t, linked.NewMapSeq(pairSeq()).IsEmpty())
 	})
 
-	t.Run("NewLinkedMapSeq keeps the first position and the last value of a repeated key", func(t *testing.T) {
-		m := meridian.NewLinkedMapSeq(pairSeq(pair{"a", 1}, pair{"b", 2}, pair{"a", 3}))
+	t.Run("NewMapSeq keeps the first position and the last value of a repeated key", func(t *testing.T) {
+		m := linked.NewMapSeq(pairSeq(pair{"a", 1}, pair{"b", 2}, pair{"a", 3}))
 
 		require.Equal(t, []pair{{"a", 3}, {"b", 2}}, pairs(m))
 		require.Equal(t, 2, m.Len())
 	})
 
-	t.Run("NewLinkedMapSeq over All copies a map", func(t *testing.T) {
+	t.Run("NewMapSeq over All copies a map", func(t *testing.T) {
 		m := newMap(pair{"a", 1}, pair{"b", 2})
 
-		c := meridian.NewLinkedMapSeq(m.All())
+		c := linked.NewMapSeq(m.All())
 		c.Store("c", 3)
 		m.Delete("a")
 
@@ -88,7 +88,7 @@ func TestLinkedMap(t *testing.T) {
 	})
 
 	t.Run("Store and Load", func(t *testing.T) {
-		var m meridian.LinkedMap[string, int]
+		var m linked.Map[string, int]
 
 		previous, replaced := m.Store("a", 1)
 		require.False(t, replaced)
@@ -118,7 +118,7 @@ func TestLinkedMap(t *testing.T) {
 	})
 
 	t.Run("Len and IsEmpty track the entries", func(t *testing.T) {
-		var m meridian.LinkedMap[string, int]
+		var m linked.Map[string, int]
 
 		require.Zero(t, m.Len())
 		require.True(t, m.IsEmpty())
@@ -196,7 +196,7 @@ func TestLinkedMap(t *testing.T) {
 	})
 
 	t.Run("Clear on an empty map is a no-op", func(t *testing.T) {
-		var m meridian.LinkedMap[string, int]
+		var m linked.Map[string, int]
 
 		require.NotPanics(t, m.Clear)
 		require.True(t, m.IsEmpty())
@@ -217,7 +217,7 @@ func TestLinkedMap(t *testing.T) {
 	})
 
 	t.Run("A copy of a zero-value map is independent, like a nil map", func(t *testing.T) {
-		var m meridian.LinkedMap[string, int]
+		var m linked.Map[string, int]
 		c := m
 
 		m.Store("a", 1)

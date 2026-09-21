@@ -20,23 +20,28 @@ func TestSingleFlight(t *testing.T) {
 		var calls int32
 
 		const n = 50
-		start := make(chan struct{})
+		release := make(chan struct{})
 		results := make([]int, n)
 		errs := make([]error, n)
 
-		var wg sync.WaitGroup
+		// Do does not block, so the task can stay in flight until every
+		// caller holds its Future: that makes the deduplication window exact
+		// instead of a sleep the callers must race.
+		var joined, wg sync.WaitGroup
+		joined.Add(n)
 		for i := range n {
 			wg.Go(func() {
-				<-start
 				f := sf.Do("key", func() (int, error) {
 					atomic.AddInt32(&calls, 1)
-					time.Sleep(30 * time.Millisecond)
+					<-release
 					return 42, nil
 				})
+				joined.Done()
 				results[i], errs[i] = f.Get(context.Background())
 			})
 		}
-		close(start)
+		joined.Wait()
+		close(release)
 		wg.Wait()
 
 		require.Equal(t, int32(1), atomic.LoadInt32(&calls))
@@ -303,8 +308,6 @@ func TestSingleFlight(t *testing.T) {
 		close(aRelease)
 		_, errA := fA.Get(context.Background())
 		require.NoError(t, errA)
-
-		time.Sleep(30 * time.Millisecond)
 
 		var freshTaskRan int32
 		fC := sf.Do("key", func() (int, error) {

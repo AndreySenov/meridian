@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/AndreySenov/meridian/actions/workflows/default.yml/badge.svg)](https://github.com/AndreySenov/meridian/actions)
 [![Latest Release](https://img.shields.io/github/v/release/AndreySenov/meridian?color=00ADD8)](https://github.com/AndreySenov/meridian/releases)
 [![License](https://img.shields.io/github/license/AndreySenov/meridian?color=00ADD8)](LICENSE)
-[![Go Reference](https://pkg.go.dev/badge/github.com/AndreySenov/meridian.svg)](https://pkg.go.dev/github.com/AndreySenov/meridian)
+[![Go Reference](https://pkg.go.dev/badge/github.com/AndreySenov/meridian/v2.svg)](https://pkg.go.dev/github.com/AndreySenov/meridian/v2)
 
 A Go library of concurrency and collection utilities.
 
@@ -17,21 +17,21 @@ A Go library of concurrency and collection utilities.
 Run the `go get` command to install Meridian:
 
 ```sh
-go get github.com/AndreySenov/meridian
+go get github.com/AndreySenov/meridian/v2
 ```
 
 Use the `-u` flag to update Meridian to the latest version:
 
 ```sh
-go get -u github.com/AndreySenov/meridian
+go get -u github.com/AndreySenov/meridian/v2
 ```
 
 Then import the package you need:
 
 ```go
 import (
-	"github.com/AndreySenov/meridian/async"
-	"github.com/AndreySenov/meridian/linked"
+	"github.com/AndreySenov/meridian/v2/async"
+	"github.com/AndreySenov/meridian/v2/linked"
 )
 ```
 
@@ -60,7 +60,7 @@ An alternative way to consume the result is to register an `OnComplete` handler.
 The handler runs on the goroutine that completes the `async.Promise`, or immediately
 on the calling goroutine if the `async.Promise` is already completed.
 Multiple `OnComplete` handlers can be registered, including on different
-`async.Future` handles of the same `Promise`;
+`async.Future` handles of the same `async.Promise`;
 the order of execution matches the order of registration.
 
 Usage example:
@@ -116,9 +116,7 @@ for name, n := range m.All() {
 
 ## Documentation
 
-See the package documentation for the full API reference:
-[async](https://pkg.go.dev/github.com/AndreySenov/meridian/async),
-[linked](https://pkg.go.dev/github.com/AndreySenov/meridian/linked).
+See the [package documentation](https://pkg.go.dev/github.com/AndreySenov/meridian/v2) for the full API reference.
 
 ## License
 

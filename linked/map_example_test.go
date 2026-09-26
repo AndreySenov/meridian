@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/AndreySenov/meridian/linked"
+	"github.com/AndreySenov/meridian/v2/linked"
 )
 
 func ExampleMap() {

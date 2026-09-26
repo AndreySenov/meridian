@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian/internal"
+	"github.com/AndreySenov/meridian/v2/internal"
 )
 
 func TestNoCopy(t *testing.T) {

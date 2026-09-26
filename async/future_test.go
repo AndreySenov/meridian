@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian/async"
+	"github.com/AndreySenov/meridian/v2/async"
 )
 
 func TestFuture(t *testing.T) {

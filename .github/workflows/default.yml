@@ -50,4 +50,4 @@ jobs:
     needs: release
     steps:
       - name: Trigger Go module proxy and pkg.go.dev indexing
-        run: curl -sSf --retry 5 --retry-all-errors 'https://proxy.golang.org/github.com/!andrey!senov/meridian/@v/'"$GITHUB_REF_NAME".info
+        run: curl -sSf --retry 5 --retry-all-errors 'https://proxy.golang.org/github.com/!andrey!senov/meridian/v2/@v/'"$GITHUB_REF_NAME".info

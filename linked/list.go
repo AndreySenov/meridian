@@ -4,7 +4,7 @@ import (
 	"iter"
 	"slices"
 
-	"github.com/AndreySenov/meridian/internal"
+	"github.com/AndreySenov/meridian/v2/internal"
 )
 
 // List represents a doubly linked list.

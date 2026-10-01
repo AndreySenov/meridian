@@ -39,7 +39,7 @@ func ExampleNewMapSeq() {
 }
 
 func ExampleMap_Store() {
-	var m linked.Map[string, int]
+	m := linked.NewMap[string, int]()
 
 	m.Store("a", 1)
 	m.Store("b", 2)
@@ -55,7 +55,7 @@ func ExampleMap_Store() {
 }
 
 func ExampleMap_Load() {
-	var m linked.Map[string, int]
+	m := linked.NewMap[string, int]()
 	m.Store("a", 1)
 
 	value, loaded := m.Load("a")
@@ -86,7 +86,7 @@ func ExampleMap_Delete() {
 }
 
 func ExampleMap_DeleteFunc() {
-	var m linked.Map[string, int]
+	m := linked.NewMap[string, int]()
 	m.Store("a", 1)
 	m.Store("b", 2)
 	m.Store("c", 3)
@@ -118,4 +118,63 @@ func ExampleMap_Keys() {
 	// key: 1
 	// value: a
 	// value: b
+}
+
+func ExampleMap_DeleteFirst() {
+	m := linked.NewMapSeq(slices.All([]string{"a", "b", "c"}))
+
+	first, _ := m.DeleteFirst()
+	last, _ := m.DeleteLast()
+
+	fmt.Println(first, last)
+	fmt.Println(slices.Collect(m.Values()))
+	// Output:
+	// a c
+	// [b]
+}
+
+func ExampleNewAccessOrderedMap() {
+	m := linked.NewAccessOrderedMap[string, int]()
+
+	m.Store("a", 1)
+	m.Store("b", 2)
+	m.Store("c", 3)
+
+	// Both Load and Store count as a use, so the entry just touched moves
+	// to the front and iteration runs from the most recently used one.
+	m.Load("a")
+
+	fmt.Println(slices.Collect(m.Keys()))
+	// Output: [a c b]
+}
+
+func ExampleNewAccessOrderedMapSeq() {
+	m := linked.NewAccessOrderedMapSeq(slices.All([]string{"a", "b", "c"}))
+
+	// The entry stored last is the most recently used one.
+	fmt.Println(slices.Collect(m.Values()))
+	// Output: [c b a]
+}
+
+func ExampleMap_DeleteLast() {
+	// A least-recently-used cache of two entries.
+	cache := linked.NewAccessOrderedMap[string, int]()
+
+	put := func(key string, value int) {
+		cache.Store(key, value)
+		if cache.Len() > 2 {
+			evicted, _ := cache.DeleteLast()
+			fmt.Println("evicted:", evicted)
+		}
+	}
+
+	put("a", 1)
+	put("b", 2)
+	cache.Load("a") // a is used again, so b becomes the eviction target
+	put("c", 3)     // over capacity: b goes
+
+	fmt.Println(slices.Collect(cache.Keys()))
+	// Output:
+	// evicted: 2
+	// [c a]
 }

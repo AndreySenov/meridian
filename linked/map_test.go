@@ -24,7 +24,7 @@ func pairs(m *linked.Map[string, int]) []pair {
 }
 
 func newMap(values ...pair) *linked.Map[string, int] {
-	m := new(linked.Map[string, int])
+	m := linked.NewMap[string, int]()
 	for _, p := range values {
 		m.Store(p.key, p.value)
 	}
@@ -85,6 +85,16 @@ func TestMap(t *testing.T) {
 
 		require.Equal(t, []pair{{"a", 1}, {"b", 2}, {"c", 3}}, pairs(c))
 		require.Equal(t, []pair{{"b", 2}}, pairs(m))
+	})
+
+	t.Run("NewMap returns an empty insertion-ordered map", func(t *testing.T) {
+		m := linked.NewMap[string, int]()
+
+		require.True(t, m.IsEmpty())
+
+		m.Store("b", 2)
+		m.Store("a", 1)
+		require.Equal(t, []pair{{"b", 2}, {"a", 1}}, pairs(m))
 	})
 
 	t.Run("Store and Load", func(t *testing.T) {
@@ -195,6 +205,35 @@ func TestMap(t *testing.T) {
 		require.Equal(t, []pair{{"c", 30}, {"a", 10}}, pairs(m))
 	})
 
+	t.Run("DeleteFirst and DeleteLast take entries from the ends of the order", func(t *testing.T) {
+		m := newMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+
+		value, deleted := m.DeleteFirst()
+		require.True(t, deleted)
+		require.Equal(t, 1, value)
+
+		value, deleted = m.DeleteLast()
+		require.True(t, deleted)
+		require.Equal(t, 3, value)
+
+		require.Equal(t, []pair{{"b", 2}}, pairs(m))
+
+		_, loaded := m.Load("a")
+		require.False(t, loaded)
+	})
+
+	t.Run("DeleteFirst and DeleteLast report an empty map", func(t *testing.T) {
+		var m linked.Map[string, int]
+
+		value, deleted := m.DeleteFirst()
+		require.False(t, deleted)
+		require.Zero(t, value)
+
+		value, deleted = m.DeleteLast()
+		require.False(t, deleted)
+		require.Zero(t, value)
+	})
+
 	t.Run("Clear on an empty map is a no-op", func(t *testing.T) {
 		var m linked.Map[string, int]
 
@@ -289,5 +328,121 @@ func TestMap(t *testing.T) {
 
 		require.Equal(t, []string{"a", "c", "d"}, seen)
 		require.Equal(t, []pair{{"a", 1}, {"c", 3}}, pairs(m))
+	})
+}
+
+func newAccessOrderedMap(values ...pair) *linked.Map[string, int] {
+	m := linked.NewAccessOrderedMap[string, int]()
+	for _, p := range values {
+		m.Store(p.key, p.value)
+	}
+	return m
+}
+
+func TestAccessOrderedMap(t *testing.T) {
+	t.Run("Iteration starts from the most recently used entry", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+
+		require.Equal(t, []pair{{"c", 3}, {"b", 2}, {"a", 1}}, pairs(m))
+		require.Equal(t, []string{"c", "b", "a"}, slices.Collect(m.Keys()))
+		require.Equal(t, []int{3, 2, 1}, slices.Collect(m.Values()))
+		require.Equal(t, 3, m.Len())
+	})
+
+	t.Run("Load counts as a use and reorders the entries", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+
+		value, loaded := m.Load("a")
+
+		require.True(t, loaded)
+		require.Equal(t, 1, value)
+		require.Equal(t, []string{"a", "c", "b"}, slices.Collect(m.Keys()))
+	})
+
+	t.Run("Loading a missing key leaves the order alone", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2})
+
+		_, loaded := m.Load("missing")
+
+		require.False(t, loaded)
+		require.Equal(t, []string{"b", "a"}, slices.Collect(m.Keys()))
+	})
+
+	t.Run("Store counts as a use for an existing key", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+
+		previous, replaced := m.Store("a", 10)
+
+		require.True(t, replaced)
+		require.Equal(t, 1, previous)
+		require.Equal(t, []pair{{"a", 10}, {"c", 3}, {"b", 2}}, pairs(m))
+		require.Equal(t, 3, m.Len())
+	})
+
+	t.Run("NewAccessOrderedMapSeq matches storing the entries one by one", func(t *testing.T) {
+		values := []pair{{"a", 1}, {"b", 2}, {"c", 3}}
+
+		fromSeq := linked.NewAccessOrderedMapSeq(pairSeq(values...))
+
+		require.Equal(t, pairs(newAccessOrderedMap(values...)), pairs(fromSeq))
+		require.True(t, linked.NewAccessOrderedMapSeq(pairSeq()).IsEmpty())
+	})
+
+	t.Run("Delete keeps the order of the rest", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+
+		require.True(t, m.Delete("b"))
+
+		require.Equal(t, []pair{{"c", 3}, {"a", 1}}, pairs(m))
+		require.False(t, m.Delete("b"))
+	})
+
+	t.Run("DeleteFunc sees the entries most recently used first", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+
+		var seen []string
+		deleted := m.DeleteFunc(func(key string, _ int) bool {
+			seen = append(seen, key)
+			return key == "c"
+		})
+
+		require.Equal(t, 1, deleted)
+		require.Equal(t, []string{"c", "b", "a"}, seen)
+		require.Equal(t, []pair{{"b", 2}, {"a", 1}}, pairs(m))
+	})
+
+	t.Run("DeleteLast evicts the least recently used entry", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+		m.Load("a") // a is now the most recently used, b the least
+
+		value, deleted := m.DeleteLast()
+
+		require.True(t, deleted)
+		require.Equal(t, 2, value)
+		require.Equal(t, []pair{{"a", 1}, {"c", 3}}, pairs(m))
+
+		_, loaded := m.Load("b")
+		require.False(t, loaded)
+	})
+
+	t.Run("DeleteFirst removes the most recently used entry", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2})
+
+		value, deleted := m.DeleteFirst()
+
+		require.True(t, deleted)
+		require.Equal(t, 2, value)
+		require.Equal(t, []pair{{"a", 1}}, pairs(m))
+	})
+
+	t.Run("Clear empties the map and keeps its order", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2})
+
+		m.Clear()
+		require.True(t, m.IsEmpty())
+
+		m.Store("c", 3)
+		m.Store("d", 4)
+		require.Equal(t, []pair{{"d", 4}, {"c", 3}}, pairs(m), "the map stays access-ordered")
 	})
 }

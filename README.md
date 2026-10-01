@@ -97,7 +97,7 @@ func LoadProfile(ctx context.Context, id string) (*Profile, error) {
 ## List and Map
 
 A `linked.List` is a doubly linked list, a typed alternative to `container/list`.
-A `linked.Map` is a map that iterates over its entries in insertion order.
+A `linked.Map` is a map that iterates over its entries in a predictable order.
 Both are ready to use as zero values.
 
 Usage example:
@@ -106,11 +106,28 @@ l := linked.NewList("a", "b", "c")
 l.MoveToFront(l.Back())
 fmt.Println(l.ToSlice()) // [c a b]
 
-var m linked.Map[string, int]
+m := linked.NewMap[string, int]()
 m.Store("first", 1)
 m.Store("second", 2)
 for name, n := range m.All() {
 	fmt.Println(name, n) // first 1, then second 2
+}
+```
+
+A `linked.Map` from `linked.NewAccessOrderedMap` iterates from the most recently
+used entry to the least recently used one, where both `Load` and `Store` count
+as a use. Together with `DeleteLast`, which removes the entry at the end of the
+order, that makes an LRU cache:
+
+```go
+cache := linked.NewAccessOrderedMap[string, int]()
+
+put := func(key string, value int) {
+	cache.Store(key, value)
+	if cache.Len() > capacity {
+		evicted, _ := cache.DeleteLast() // the least recently used entry
+		log.Println("evicted", evicted)
+	}
 }
 ```
 

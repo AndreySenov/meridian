@@ -49,7 +49,8 @@ func TestMap(t *testing.T) {
 		require.False(t, loaded)
 		require.Zero(t, v)
 
-		require.False(t, m.Delete("a"))
+		_, deleted := m.Delete("a")
+		require.False(t, deleted)
 		require.Zero(t, m.DeleteFunc(func(string, int) bool { return true }))
 		require.Empty(t, pairs(&m))
 		require.Empty(t, slices.Collect(m.Keys()))
@@ -164,14 +165,17 @@ func TestMap(t *testing.T) {
 	t.Run("Delete removes the key and keeps the order of the rest", func(t *testing.T) {
 		m := newMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
 
-		require.True(t, m.Delete("b"))
+		value, deleted := m.Delete("b")
+		require.Equal(t, 2, value)
+		require.True(t, deleted)
 
 		_, loaded := m.Load("b")
 		require.False(t, loaded)
 		require.Equal(t, []pair{{"a", 1}, {"c", 3}}, pairs(m))
 
-		require.False(t, m.Delete("b"), "deleting twice reports nothing to delete")
-		require.False(t, m.Delete("missing"))
+		value, deleted = m.Delete("b")
+		require.Zero(t, value)
+		require.False(t, deleted)
 		require.Equal(t, []pair{{"a", 1}, {"c", 3}}, pairs(m))
 	})
 
@@ -197,7 +201,9 @@ func TestMap(t *testing.T) {
 
 		_, loaded := m.Load("a")
 		require.False(t, loaded)
-		require.False(t, m.Delete("a"))
+
+		_, deleted := m.Delete("a")
+		require.False(t, deleted)
 
 		m.Store("c", 30)
 		_, replaced := m.Store("a", 10)
@@ -208,12 +214,14 @@ func TestMap(t *testing.T) {
 	t.Run("DeleteFirst and DeleteLast take entries from the ends of the order", func(t *testing.T) {
 		m := newMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
 
-		value, deleted := m.DeleteFirst()
+		key, value, deleted := m.DeleteFirst()
 		require.True(t, deleted)
+		require.Equal(t, "a", key)
 		require.Equal(t, 1, value)
 
-		value, deleted = m.DeleteLast()
+		key, value, deleted = m.DeleteLast()
 		require.True(t, deleted)
+		require.Equal(t, "c", key)
 		require.Equal(t, 3, value)
 
 		require.Equal(t, []pair{{"b", 2}}, pairs(m))
@@ -225,12 +233,14 @@ func TestMap(t *testing.T) {
 	t.Run("DeleteFirst and DeleteLast report an empty map", func(t *testing.T) {
 		var m linked.Map[string, int]
 
-		value, deleted := m.DeleteFirst()
+		key, value, deleted := m.DeleteFirst()
 		require.False(t, deleted)
+		require.Zero(t, key)
 		require.Zero(t, value)
 
-		value, deleted = m.DeleteLast()
+		key, value, deleted = m.DeleteLast()
 		require.False(t, deleted)
+		require.Zero(t, key)
 		require.Zero(t, value)
 	})
 
@@ -391,10 +401,14 @@ func TestAccessOrderedMap(t *testing.T) {
 	t.Run("Delete keeps the order of the rest", func(t *testing.T) {
 		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
 
-		require.True(t, m.Delete("b"))
+		value, deleted := m.Delete("b")
+		require.Equal(t, 2, value)
+		require.True(t, deleted)
 
 		require.Equal(t, []pair{{"c", 3}, {"a", 1}}, pairs(m))
-		require.False(t, m.Delete("b"))
+
+		_, deleted = m.Delete("b")
+		require.False(t, deleted)
 	})
 
 	t.Run("DeleteFunc sees the entries most recently used first", func(t *testing.T) {
@@ -415,9 +429,10 @@ func TestAccessOrderedMap(t *testing.T) {
 		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
 		m.Load("a") // a is now the most recently used, b the least
 
-		value, deleted := m.DeleteLast()
+		key, value, deleted := m.DeleteLast()
 
 		require.True(t, deleted)
+		require.Equal(t, "b", key)
 		require.Equal(t, 2, value)
 		require.Equal(t, []pair{{"a", 1}, {"c", 3}}, pairs(m))
 
@@ -428,9 +443,10 @@ func TestAccessOrderedMap(t *testing.T) {
 	t.Run("DeleteFirst removes the most recently used entry", func(t *testing.T) {
 		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2})
 
-		value, deleted := m.DeleteFirst()
+		key, value, deleted := m.DeleteFirst()
 
 		require.True(t, deleted)
+		require.Equal(t, "b", key)
 		require.Equal(t, 2, value)
 		require.Equal(t, []pair{{"a", 1}}, pairs(m))
 	})

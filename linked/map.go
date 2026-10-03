@@ -103,13 +103,15 @@ func (m *Map[K, V]) Store(key K, value V) (previous V, replaced bool) {
 	return
 }
 
-// Delete removes key and reports whether it was present.
-func (m *Map[K, V]) Delete(key K) (deleted bool) {
+// Delete removes key and returns the value stored for it. It reports false
+// with the zero value if the key was not present.
+func (m *Map[K, V]) Delete(key K) (value V, deleted bool) {
 	m.init()
 
 	if existing, ok := m.entries[key]; ok {
-		m.delete(existing.node)
+		value = existing.value
 		deleted = true
+		m.delete(existing.node)
 	}
 
 	return
@@ -133,8 +135,9 @@ func (m *Map[K, V]) DeleteFunc(del func(key K, value V) bool) (deleted int) {
 
 // DeleteFirst removes the first entry according to the map's order - the
 // entry stored first, or the most recently used one in an access-ordered
-// map. It reports false with the zero value if the map is empty.
-func (m *Map[K, V]) DeleteFirst() (value V, deleted bool) {
+// map - and returns it. It reports false with zero values if the map is
+// empty.
+func (m *Map[K, V]) DeleteFirst() (key K, value V, deleted bool) {
 	m.init()
 
 	first := m.keys.Front()
@@ -142,7 +145,9 @@ func (m *Map[K, V]) DeleteFirst() (value V, deleted bool) {
 		return
 	}
 
-	if existing, ok := m.entries[first.Value()]; ok {
+	k := first.Value()
+	if existing, ok := m.entries[k]; ok {
+		key = k
 		value = existing.value
 		deleted = true
 	}
@@ -153,9 +158,9 @@ func (m *Map[K, V]) DeleteFirst() (value V, deleted bool) {
 
 // DeleteLast removes the last entry according to the map's order - the
 // entry stored last, or the least recently used one, which makes it the
-// eviction target of an LRU cache. It reports false with the zero value if
-// the map is empty.
-func (m *Map[K, V]) DeleteLast() (value V, deleted bool) {
+// eviction target of an LRU cache - and returns it. It reports false with
+// zero values if the map is empty.
+func (m *Map[K, V]) DeleteLast() (key K, value V, deleted bool) {
 	m.init()
 
 	back := m.keys.Back()
@@ -163,7 +168,9 @@ func (m *Map[K, V]) DeleteLast() (value V, deleted bool) {
 		return
 	}
 
-	if existing, ok := m.entries[back.Value()]; ok {
+	k := back.Value()
+	if existing, ok := m.entries[k]; ok {
+		key = k
 		value = existing.value
 		deleted = true
 	}

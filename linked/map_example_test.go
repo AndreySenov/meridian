@@ -72,16 +72,20 @@ func ExampleMap_Load() {
 func ExampleMap_Delete() {
 	m := linked.NewMapSeq(slices.All([]string{"a", "b", "c"}))
 
-	fmt.Println(m.Delete(1))
-	fmt.Println(m.Delete(1))
+	value, deleted := m.Delete(1)
+	fmt.Println(value, deleted)
+
+	// Deleting a missing key yields the zero value.
+	value, deleted = m.Delete(1)
+	fmt.Printf("%q %v\n", value, deleted)
 
 	// A key stored again goes to the end of the order.
 	m.Store(1, "b")
 
 	fmt.Println(slices.Collect(m.Values()))
 	// Output:
-	// true
-	// false
+	// b true
+	// "" false
 	// [a c b]
 }
 
@@ -123,13 +127,15 @@ func ExampleMap_Keys() {
 func ExampleMap_DeleteFirst() {
 	m := linked.NewMapSeq(slices.All([]string{"a", "b", "c"}))
 
-	first, _ := m.DeleteFirst()
-	last, _ := m.DeleteLast()
+	firstKey, firstValue, _ := m.DeleteFirst()
+	lastKey, lastValue, _ := m.DeleteLast()
 
-	fmt.Println(first, last)
+	fmt.Println(firstKey, firstValue)
+	fmt.Println(lastKey, lastValue)
 	fmt.Println(slices.Collect(m.Values()))
 	// Output:
-	// a c
+	// 0 a
+	// 2 c
 	// [b]
 }
 
@@ -163,8 +169,8 @@ func ExampleMap_DeleteLast() {
 	put := func(key string, value int) {
 		cache.Store(key, value)
 		if cache.Len() > 2 {
-			evicted, _ := cache.DeleteLast()
-			fmt.Println("evicted:", evicted)
+			deletedKey, deletedValue, _ := cache.DeleteLast()
+			fmt.Println("evicted:", deletedKey, deletedValue)
 		}
 	}
 
@@ -175,6 +181,6 @@ func ExampleMap_DeleteLast() {
 
 	fmt.Println(slices.Collect(cache.Keys()))
 	// Output:
-	// evicted: 2
+	// evicted: b 2
 	// [c a]
 }

@@ -116,8 +116,8 @@ for name, n := range m.All() {
 
 A `linked.Map` from `linked.NewAccessOrderedMap` iterates from the most recently
 used entry to the least recently used one, where both `Load` and `Store` count
-as a use. Together with `DeleteLast`, which removes the entry at the end of the
-order, that makes an LRU cache:
+as a use. Together with `DeleteLast`, which removes and returns the entry at the
+end of the order, that makes an LRU cache:
 
 ```go
 cache := linked.NewAccessOrderedMap[string, int]()
@@ -125,8 +125,9 @@ cache := linked.NewAccessOrderedMap[string, int]()
 put := func(key string, value int) {
 	cache.Store(key, value)
 	if cache.Len() > capacity {
-		evicted, _ := cache.DeleteLast() // the least recently used entry
-		log.Println("evicted", evicted)
+		// The least recently used entry, key included.
+		evictedKey, evictedValue, _ := cache.DeleteLast()
+		log.Println("evicted", evictedKey, evictedValue)
 	}
 }
 ```

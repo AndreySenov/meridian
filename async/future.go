@@ -71,7 +71,9 @@ func (f Future[T]) OnComplete(handler func(value T, err error)) (cancel func() b
 		f.state.completeMu.Lock()
 		defer f.state.completeMu.Unlock()
 
-		return f.state.onCompleteHandlers.Delete(id)
+		_, deleted := f.state.onCompleteHandlers.Delete(id)
+
+		return deleted
 	}
 }
 

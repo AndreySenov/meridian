@@ -61,11 +61,15 @@ make clean
 - Tests must cover the public API.
 - Tests must pass `make test`; run `make test` multiple times to ensure stability.
 - Add or update tests for any code change.
-- Keep tests in `_test.go` files alongside the code.
+- Keep tests in `_test.go` files alongside the code, in the external test package,
+  so they use only the public API.
 - Adopt the style of the existing tests.
 - Organize tests as named subtests using the `t.Run` function.
 - Assert test results with `require` and `assert` from the `testify` package.
 - Prefer `require` over `assert`; use `assert` only in go-routines started within the same test.
+- Usage examples must be provided for the public API as `Example` functions.
+- Keep `Example` functions in `*_example_test.go` files.
+- Verify the result of an `Example` function with an `// Output:` comment.
 - Check coverage with `make cover`; it must not decrease.
 
 ## Definition of done

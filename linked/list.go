@@ -29,7 +29,7 @@ func NewList[E any](values ...E) *List[E] {
 
 // NewListSeq returns a new list holding values from seq.
 func NewListSeq[E any](seq iter.Seq[E]) *List[E] {
-	l := new(List[E])
+	l := NewList[E]()
 	for v := range seq {
 		l.PushBack(v)
 	}

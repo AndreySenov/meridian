@@ -14,7 +14,7 @@ import (
 // copylocks vet check does not see: the copy is exactly what List
 // guards against, and these tests exercise that guard.
 func copyList(l *linked.List[int]) *linked.List[int] {
-	c := new(linked.List[int])
+	c := linked.NewList[int]()
 	reflect.ValueOf(c).Elem().Set(reflect.ValueOf(l).Elem())
 	return c
 }
@@ -268,7 +268,7 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("A list may be copied while it holds no nodes", func(t *testing.T) {
-		c := copyList(new(linked.List[int]))
+		c := copyList(linked.NewList[int]())
 		c.PushBack(1)
 		require.Equal(t, []int{1}, c.ToSlice())
 
@@ -389,8 +389,8 @@ func TestList(t *testing.T) {
 
 		l.PushBackList(nil)
 		l.PushFrontList(nil)
-		l.PushBackList(new(linked.List[int]))
-		l.PushFrontList(new(linked.List[int]))
+		l.PushBackList(linked.NewList[int]())
+		l.PushFrontList(linked.NewList[int]())
 
 		require.Equal(t, []int{1}, l.ToSlice())
 	})

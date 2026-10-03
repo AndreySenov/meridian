@@ -230,7 +230,7 @@ func (m *Map[K, V]) Values() iter.Seq[V] {
 func (m *Map[K, V]) init() {
 	if m.entries == nil || m.keys == nil {
 		m.entries = make(map[K]mapEntry[K, V])
-		m.keys = new(List[K])
+		m.keys = NewList[K]()
 	}
 }
 

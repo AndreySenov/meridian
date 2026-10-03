@@ -11,7 +11,9 @@ func ExampleSingleFlight_Do() {
 	var flights async.SingleFlight[string, int]
 
 	calls := 0
+	release := make(chan struct{})
 	task := func() (int, error) {
+		<-release // keep the call in flight until the second Do joins it
 		calls++
 		return 42, nil
 	}
@@ -19,6 +21,7 @@ func ExampleSingleFlight_Do() {
 	// The second call joins the first one instead of running the task again.
 	f1 := flights.Do("key", task)
 	f2 := flights.Do("key", task)
+	close(release)
 
 	value, err := f1.Get(context.Background())
 

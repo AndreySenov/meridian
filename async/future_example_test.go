@@ -41,7 +41,7 @@ func ExampleFuture_Done() {
 		value, _ := f.Get(context.Background())
 		fmt.Println("completed:", value)
 	case <-context.Background().Done():
-		fmt.Println("cancelled")
+		fmt.Println("canceled")
 	}
 
 	// Output: completed: 42

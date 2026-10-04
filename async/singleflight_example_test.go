@@ -12,7 +12,7 @@ func ExampleSingleFlight_Do() {
 
 	calls := 0
 	release := make(chan struct{})
-	task := func() (int, error) {
+	task := func(context.Context) (int, error) {
 		<-release // keep the call in flight until the second Do joins it
 		calls++
 		return 42, nil
@@ -35,11 +35,34 @@ func ExampleSingleFlight_Do() {
 	// shared: true
 }
 
+func ExampleSingleFlight_Cancel() {
+	var flights async.SingleFlight[string, int]
+
+	started := make(chan struct{})
+	f := flights.Do("key", func(ctx context.Context) (int, error) {
+		close(started)
+		<-ctx.Done() // the task stops as soon as its context is canceled
+
+		return 0, ctx.Err()
+	})
+	<-started
+
+	fmt.Println("canceled:", flights.Cancel("key"))
+
+	// Every consumer is released at once, regardless of whether the task cooperates.
+	value, err := f.Get(context.Background())
+
+	fmt.Println("result:", value, err)
+	// Output:
+	// canceled: true
+	// result: 0 context canceled
+}
+
 func ExampleSingleFlight_Forget() {
 	var flights async.SingleFlight[string, int]
 
 	calls := 0
-	task := func() (int, error) {
+	task := func(context.Context) (int, error) {
 		calls++
 		return calls, nil
 	}

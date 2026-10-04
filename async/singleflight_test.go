@@ -31,7 +31,7 @@ func TestSingleFlight(t *testing.T) {
 		joined.Add(n)
 		for i := range n {
 			wg.Go(func() {
-				f := sf.Do("key", func() (int, error) {
+				f := sf.Do("key", func(context.Context) (int, error) {
 					atomic.AddInt32(&calls, 1)
 					<-release
 					return 42, nil
@@ -57,14 +57,14 @@ func TestSingleFlight(t *testing.T) {
 		var calls int32
 
 		for i := range 2000 {
-			f1 := sf.Do("key", func() (int, error) {
+			f1 := sf.Do("key", func(context.Context) (int, error) {
 				return int(atomic.AddInt32(&calls, 1)), nil
 			})
 			v1, err1 := f1.Get(context.Background())
 			require.NoError(t, err1)
 			require.Equal(t, int(2*i+1), v1)
 
-			f2 := sf.Do("key", func() (int, error) {
+			f2 := sf.Do("key", func(context.Context) (int, error) {
 				return int(atomic.AddInt32(&calls, 1)), nil
 			})
 			v2, err2 := f2.Get(context.Background())
@@ -77,11 +77,11 @@ func TestSingleFlight(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 		var calls int32
 
-		f1 := sf.Do("a", func() (int, error) {
+		f1 := sf.Do("a", func(context.Context) (int, error) {
 			atomic.AddInt32(&calls, 1)
 			return 1, nil
 		})
-		f2 := sf.Do("b", func() (int, error) {
+		f2 := sf.Do("b", func(context.Context) (int, error) {
 			atomic.AddInt32(&calls, 1)
 			return 2, nil
 		})
@@ -98,7 +98,7 @@ func TestSingleFlight(t *testing.T) {
 		require.Equal(t, int32(2), atomic.LoadInt32(&calls))
 	})
 
-	t.Run("Error is shared by all waiters", func(t *testing.T) {
+	t.Run("Error is shared by all consumers", func(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 		wantErr := errors.New("boom")
 
@@ -107,7 +107,7 @@ func TestSingleFlight(t *testing.T) {
 		var wg sync.WaitGroup
 		for i := range n {
 			wg.Go(func() {
-				f := sf.Do("key", func() (int, error) {
+				f := sf.Do("key", func(context.Context) (int, error) {
 					return 0, wantErr
 				})
 				_, errs[i] = f.Get(context.Background())
@@ -123,7 +123,7 @@ func TestSingleFlight(t *testing.T) {
 	t.Run("Panic is recovered and returned as error", func(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 
-		f := sf.Do("key", func() (int, error) {
+		f := sf.Do("key", func(context.Context) (int, error) {
 			panic("boom")
 		})
 
@@ -133,7 +133,7 @@ func TestSingleFlight(t *testing.T) {
 		require.Contains(t, err.Error(), "boom")
 	})
 
-	t.Run("Panic does not crash other waiters", func(t *testing.T) {
+	t.Run("Panic does not crash other consumers", func(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 
 		const n = 10
@@ -141,7 +141,7 @@ func TestSingleFlight(t *testing.T) {
 		var wg sync.WaitGroup
 		for i := range n {
 			wg.Go(func() {
-				f := sf.Do("key", func() (int, error) {
+				f := sf.Do("key", func(context.Context) (int, error) {
 					panic("boom")
 				})
 				_, errs[i] = f.Get(context.Background())
@@ -157,7 +157,7 @@ func TestSingleFlight(t *testing.T) {
 	t.Run("Key is usable after panic", func(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 
-		f1 := sf.Do("key", func() (int, error) {
+		f1 := sf.Do("key", func(context.Context) (int, error) {
 			panic("boom")
 		})
 
@@ -167,7 +167,7 @@ func TestSingleFlight(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		f2 := sf.Do("key", func() (int, error) {
+		f2 := sf.Do("key", func(context.Context) (int, error) {
 			return 7, nil
 		})
 
@@ -177,10 +177,10 @@ func TestSingleFlight(t *testing.T) {
 		require.Equal(t, 7, v2)
 	})
 
-	t.Run("Goexit in task unblocks waiters and frees the key", func(t *testing.T) {
+	t.Run("Goexit in task unblocks consumers and frees the key", func(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 
-		f1 := sf.Do("key", func() (int, error) {
+		f1 := sf.Do("key", func(context.Context) (int, error) {
 			runtime.Goexit()
 			return 1, nil // unreachable
 		})
@@ -190,12 +190,12 @@ func TestSingleFlight(t *testing.T) {
 
 		_, err := f1.Get(ctx)
 		require.Error(t, err)
-		require.NotErrorIs(t, err, context.DeadlineExceeded, "waiter must get the task's error, not hang until its own ctx")
+		require.NotErrorIs(t, err, context.DeadlineExceeded, "consumer must get the task's error, not hang until its own ctx")
 
 		ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second)
 		defer cancel2()
 
-		f2 := sf.Do("key", func() (int, error) {
+		f2 := sf.Do("key", func(context.Context) (int, error) {
 			return 7, nil
 		})
 
@@ -213,7 +213,7 @@ func TestSingleFlight(t *testing.T) {
 		for round := range 20 {
 			for _, k := range keys {
 				wg.Go(func() {
-					f := sf.Do(k, func() (int, error) {
+					f := sf.Do(k, func(context.Context) (int, error) {
 						if round%2 == 0 {
 							panic("fail")
 						}
@@ -237,12 +237,217 @@ func TestSingleFlight(t *testing.T) {
 		}
 	})
 
+	t.Run("Cancel delivers the context error to every consumer", func(t *testing.T) {
+		var sf async.SingleFlight[string, int]
+
+		started := make(chan struct{})
+		stopped := make(chan struct{})
+		f1 := sf.Do("key", func(ctx context.Context) (int, error) {
+			close(started)
+			defer close(stopped)
+			<-ctx.Done()
+
+			return 0, ctx.Err()
+		})
+		f2 := sf.Do("key", func(context.Context) (int, error) { return 1, nil })
+		<-started
+
+		require.True(t, sf.Cancel("key"))
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		for _, f := range []async.Future[int]{f1, f2} {
+			v, err := f.Get(ctx)
+			require.ErrorIs(t, err, context.Canceled)
+			require.Zero(t, v)
+		}
+
+		select {
+		case <-stopped: // Cancel canceled the context, so the task left
+		case <-time.After(time.Second):
+			require.Fail(t, "the task was never asked to stop")
+		}
+	})
+
+	t.Run("Cancel frees the consumers even when the task ignores the context", func(t *testing.T) {
+		var sf async.SingleFlight[string, int]
+
+		started := make(chan struct{})
+		release := make(chan struct{})
+		finished := make(chan struct{})
+		f := sf.Do("key", func(context.Context) (int, error) {
+			close(started)
+			<-release
+			defer close(finished)
+
+			return 42, nil
+		})
+		<-started
+
+		require.True(t, sf.Cancel("key"))
+
+		// The consumer is released at once, without waiting for the task.
+		v, err := f.Get(context.Background())
+		require.ErrorIs(t, err, context.Canceled)
+		require.Zero(t, v)
+
+		// The task still runs to completion, but its result is discarded.
+		close(release)
+		<-finished
+
+		v, err = f.Get(context.Background())
+		require.ErrorIs(t, err, context.Canceled, "the result of a canceled call is dropped")
+		require.Zero(t, v)
+	})
+
+	t.Run("Cancel wins over the error of a task that stops on its context", func(t *testing.T) {
+		interrupted := errors.New("interrupted")
+
+		// The task could only beat Cancel to the Promise in a narrow window,
+		// so the race is repeated until it would have shown up.
+		for range 2000 {
+			var sf async.SingleFlight[string, int]
+
+			started := make(chan struct{})
+			f := sf.Do("key", func(ctx context.Context) (int, error) {
+				close(started)
+				<-ctx.Done()
+
+				return 0, interrupted
+			})
+			<-started
+
+			require.True(t, sf.Cancel("key"))
+
+			_, err := f.Get(context.Background())
+			require.ErrorIs(t, err, context.Canceled)
+		}
+	})
+
+	t.Run("Cancel does not deadlock an OnComplete handler that calls back", func(t *testing.T) {
+		var sf async.SingleFlight[string, int]
+
+		started := make(chan struct{})
+		f := sf.Do("key", func(ctx context.Context) (int, error) {
+			close(started)
+			<-ctx.Done()
+
+			return 0, ctx.Err()
+		})
+		<-started
+
+		var reentered bool
+		f.OnComplete(func(int, error) {
+			sf.Forget("key")
+			reentered = true
+		})
+
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			sf.Cancel("key")
+		}()
+
+		select {
+		case <-done:
+			require.True(t, reentered)
+		case <-time.After(time.Second):
+			require.Fail(t, "Cancel deadlocked against its own handler")
+		}
+	})
+
+	t.Run("Cancel lets a new caller start a fresh task", func(t *testing.T) {
+		var sf async.SingleFlight[string, int]
+
+		started := make(chan struct{})
+		f1 := sf.Do("key", func(ctx context.Context) (int, error) {
+			close(started)
+			<-ctx.Done()
+
+			return 0, ctx.Err()
+		})
+		<-started
+
+		require.True(t, sf.Cancel("key"))
+
+		f2 := sf.Do("key", func(context.Context) (int, error) { return 2, nil })
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		v2, err2 := f2.Get(ctx)
+		require.NoError(t, err2)
+		require.Equal(t, 2, v2)
+
+		_, err1 := f1.Get(ctx)
+		require.ErrorIs(t, err1, context.Canceled)
+	})
+
+	t.Run("The task context is canceled once the call completes", func(t *testing.T) {
+		var sf async.SingleFlight[string, int]
+
+		var taskCtx context.Context
+		f := sf.Do("key", func(ctx context.Context) (int, error) {
+			taskCtx = ctx
+			require.NoError(t, ctx.Err())
+
+			return 1, nil
+		})
+
+		v, err := f.Get(context.Background())
+		require.NoError(t, err)
+		require.Equal(t, 1, v)
+
+		select {
+		case <-taskCtx.Done():
+			require.ErrorIs(t, taskCtx.Err(), context.Canceled)
+		case <-time.After(time.Second):
+			require.Fail(t, "the task context was never canceled")
+		}
+	})
+
+	t.Run("Cancel reports false when there is nothing in flight", func(t *testing.T) {
+		var sf async.SingleFlight[string, int]
+
+		require.False(t, sf.Cancel("never-seen"))
+
+		f := sf.Do("key", func(context.Context) (int, error) { return 1, nil })
+		v, err := f.Get(context.Background())
+		require.NoError(t, err)
+		require.Equal(t, 1, v)
+
+		require.False(t, sf.Cancel("key"), "a completed call is no longer in flight")
+	})
+
+	t.Run("Cancel after Forget does not reach the detached call", func(t *testing.T) {
+		var sf async.SingleFlight[string, int]
+
+		started := make(chan struct{})
+		release := make(chan struct{})
+		f := sf.Do("key", func(ctx context.Context) (int, error) {
+			close(started)
+			<-release
+
+			return 1, ctx.Err()
+		})
+		<-started
+
+		sf.Forget("key")
+		require.False(t, sf.Cancel("key"))
+
+		close(release)
+		v, err := f.Get(context.Background())
+		require.NoError(t, err)
+		require.Equal(t, 1, v)
+	})
+
 	t.Run("Forget lets a new caller bypass a still in-flight call", func(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 
 		aStarted := make(chan struct{})
 		aRelease := make(chan struct{})
-		fA := sf.Do("key", func() (int, error) {
+		fA := sf.Do("key", func(context.Context) (int, error) {
 			close(aStarted)
 			<-aRelease
 			return 1, nil
@@ -251,7 +456,7 @@ func TestSingleFlight(t *testing.T) {
 
 		sf.Forget("key")
 
-		fB := sf.Do("key", func() (int, error) {
+		fB := sf.Do("key", func(context.Context) (int, error) {
 			return 2, nil
 		})
 
@@ -274,7 +479,7 @@ func TestSingleFlight(t *testing.T) {
 			sf.Forget("never-seen")
 		})
 
-		f := sf.Do("key", func() (int, error) {
+		f := sf.Do("key", func(context.Context) (int, error) {
 			return 1, nil
 		})
 		v, err := f.Get(context.Background())
@@ -287,7 +492,7 @@ func TestSingleFlight(t *testing.T) {
 
 		aStarted := make(chan struct{})
 		aRelease := make(chan struct{})
-		fA := sf.Do("key", func() (int, error) {
+		fA := sf.Do("key", func(context.Context) (int, error) {
 			close(aStarted)
 			<-aRelease
 			return 1, nil
@@ -298,7 +503,7 @@ func TestSingleFlight(t *testing.T) {
 
 		bStarted := make(chan struct{})
 		bRelease := make(chan struct{})
-		fB := sf.Do("key", func() (int, error) {
+		fB := sf.Do("key", func(context.Context) (int, error) {
 			close(bStarted)
 			<-bRelease
 			return 2, nil
@@ -310,7 +515,7 @@ func TestSingleFlight(t *testing.T) {
 		require.NoError(t, errA)
 
 		var freshTaskRan int32
-		fC := sf.Do("key", func() (int, error) {
+		fC := sf.Do("key", func(context.Context) (int, error) {
 			atomic.AddInt32(&freshTaskRan, 1)
 			return 3, nil
 		})
@@ -329,7 +534,7 @@ func TestSingleFlight(t *testing.T) {
 	t.Run("IsShared is false when nobody joins the call", func(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 
-		f := sf.Do("key", func() (int, error) {
+		f := sf.Do("key", func(context.Context) (int, error) {
 			return 1, nil
 		})
 		v, err := f.Get(context.Background())
@@ -344,14 +549,14 @@ func TestSingleFlight(t *testing.T) {
 
 		started := make(chan struct{})
 		release := make(chan struct{})
-		f1 := sf.Do("key", func() (int, error) {
+		f1 := sf.Do("key", func(context.Context) (int, error) {
 			close(started)
 			<-release
 			return 1, nil
 		})
 		<-started
 
-		f2 := sf.Do("key", func() (int, error) {
+		f2 := sf.Do("key", func(context.Context) (int, error) {
 			return 2, nil
 		})
 
@@ -373,7 +578,7 @@ func TestSingleFlight(t *testing.T) {
 
 		started := make(chan struct{})
 		release := make(chan struct{})
-		f0 := sf.Do("key", func() (int, error) {
+		f0 := sf.Do("key", func(context.Context) (int, error) {
 			close(started)
 			<-release
 			return 1, nil
@@ -385,7 +590,7 @@ func TestSingleFlight(t *testing.T) {
 		var wg sync.WaitGroup
 		for i := range joiners {
 			wg.Go(func() {
-				futures[i] = sf.Do("key", func() (int, error) {
+				futures[i] = sf.Do("key", func(context.Context) (int, error) {
 					return 0, nil
 				})
 			})
@@ -408,12 +613,12 @@ func TestSingleFlight(t *testing.T) {
 	t.Run("A fresh call after the previous one completed is not shared", func(t *testing.T) {
 		var sf async.SingleFlight[string, int]
 
-		f1 := sf.Do("key", func() (int, error) { return 1, nil })
+		f1 := sf.Do("key", func(context.Context) (int, error) { return 1, nil })
 		_, _ = f1.Get(context.Background())
 
 		require.False(t, f1.IsShared())
 
-		f2 := sf.Do("key", func() (int, error) { return 2, nil })
+		f2 := sf.Do("key", func(context.Context) (int, error) { return 2, nil })
 		v2, err2 := f2.Get(context.Background())
 
 		require.NoError(t, err2)

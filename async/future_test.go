@@ -41,7 +41,7 @@ func TestFuture(t *testing.T) {
 		require.ErrorIs(t, err, context.DeadlineExceeded)
 	})
 
-	t.Run("Get prefers result over already cancelled ctx", func(t *testing.T) {
+	t.Run("Get prefers result over already canceled ctx", func(t *testing.T) {
 		for range 200 {
 			p := async.NewPromise[int]()
 			f := p.Future()
@@ -194,9 +194,9 @@ func TestFuture(t *testing.T) {
 		p := async.NewPromise[int]()
 		f := p.Future()
 
-		var cancelled, kept int
+		var canceled, kept int
 		cancel := f.OnComplete(func(_ int, _ error) {
-			cancelled++
+			canceled++
 		})
 		f.OnComplete(func(_ int, _ error) {
 			kept++
@@ -207,7 +207,7 @@ func TestFuture(t *testing.T) {
 
 		p.Resolve(9)
 
-		require.Zero(t, cancelled)
+		require.Zero(t, canceled)
 		require.Equal(t, 1, kept)
 	})
 

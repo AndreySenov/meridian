@@ -87,10 +87,10 @@ receives the same result instead of running its own task:
 var flights async.SingleFlight[string, *Profile]
 
 func LoadProfile(ctx context.Context, id string) (*Profile, error) {
-	future := flights.Do(id, func() (*Profile, error) {
-		return fetchProfileFromDB(id) // runs once per key, no matter how many callers
+	future := flights.Do(id, func(taskCtx context.Context) (*Profile, error) {
+		return fetchProfileFromDB(taskCtx, id) // runs once per key, no matter how many callers
 	})
-	return future.Get(ctx) // each caller waits with its own context
+	return future.Get(ctx) // each consumer waits with its own context
 }
 ```
 

@@ -20,7 +20,7 @@ type Promise[T any] struct {
 
 // NewPromise returns a new, pending Promise.
 func NewPromise[T any]() *Promise[T] {
-	return &Promise[T]{}
+	return new(Promise[T])
 }
 
 type promiseState[T any] struct {

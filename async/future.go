@@ -49,8 +49,8 @@ func (f Future[T]) Done() <-chan struct{} {
 //
 // Calling the returned cancel function unregisters the handler and releases
 // it. It reports whether it stopped the handler from being run: false means
-// the handler has already been picked up for execution, or was cancelled
-// before. Cancelling is safe at any time and any number of times, but it
+// the handler has already been picked up for execution, or was canceled
+// before. Canceling is safe at any time and any number of times, but it
 // does not wait for a handler that is already running.
 func (f Future[T]) OnComplete(handler func(value T, err error)) (cancel func() bool) {
 	f.check()

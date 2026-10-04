@@ -133,6 +133,45 @@ func (m *Map[K, V]) DeleteFunc(del func(key K, value V) bool) (deleted int) {
 	return
 }
 
+// First returns the first entry according to the map's order - the entry
+// stored first, or the most recently used one in an access-ordered map.
+// Unlike Load, it never counts as a use, so it leaves the order alone. It
+// reports false with zero values if the map is empty.
+func (m *Map[K, V]) First() (key K, value V, ok bool) {
+	m.init()
+
+	first := m.keys.Front()
+	if first == nil {
+		return
+	}
+
+	key = first.Value()
+	value = m.entries[key].value
+	ok = true
+
+	return
+}
+
+// Last returns the last entry according to the map's order - the entry
+// stored last, or the least recently used one, which makes it the eviction
+// candidate of an LRU cache. Unlike Load, it never counts as a use, so it
+// leaves the order alone. It reports false with zero values if the map is
+// empty.
+func (m *Map[K, V]) Last() (key K, value V, ok bool) {
+	m.init()
+
+	back := m.keys.Back()
+	if back == nil {
+		return
+	}
+
+	key = back.Value()
+	value = m.entries[key].value
+	ok = true
+
+	return
+}
+
 // DeleteFirst removes the first entry according to the map's order - the
 // entry stored first, or the most recently used one in an access-ordered
 // map - and returns it. It reports false with zero values if the map is

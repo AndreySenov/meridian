@@ -124,6 +124,26 @@ func ExampleMap_Keys() {
 	// value: b
 }
 
+func ExampleMap_Last() {
+	cache := linked.NewAccessOrderedMap[string, int]()
+	cache.Store("a", 1)
+	cache.Store("b", 2)
+
+	// The eviction candidate can be inspected before deciding to drop it,
+	// because neither First nor Last counts as a use.
+	key, value, _ := cache.Last()
+	fmt.Println("next to evict:", key, value)
+
+	firstKey, _, _ := cache.First()
+	fmt.Println("most recently used:", firstKey)
+
+	fmt.Println(slices.Collect(cache.Keys()))
+	// Output:
+	// next to evict: a 1
+	// most recently used: b
+	// [b a]
+}
+
 func ExampleMap_DeleteFirst() {
 	m := linked.NewMapSeq(slices.All([]string{"a", "b", "c"}))
 

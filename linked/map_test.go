@@ -211,6 +211,36 @@ func TestMap(t *testing.T) {
 		require.Equal(t, []pair{{"c", 30}, {"a", 10}}, pairs(m))
 	})
 
+	t.Run("First and Last read the ends of the order without removing them", func(t *testing.T) {
+		m := newMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+
+		key, value, ok := m.First()
+		require.True(t, ok)
+		require.Equal(t, "a", key)
+		require.Equal(t, 1, value)
+
+		key, value, ok = m.Last()
+		require.True(t, ok)
+		require.Equal(t, "c", key)
+		require.Equal(t, 3, value)
+
+		require.Equal(t, []pair{{"a", 1}, {"b", 2}, {"c", 3}}, pairs(m), "reading the ends keeps every entry")
+	})
+
+	t.Run("First and Last report an empty map", func(t *testing.T) {
+		var m linked.Map[string, int]
+
+		key, value, ok := m.First()
+		require.False(t, ok)
+		require.Zero(t, key)
+		require.Zero(t, value)
+
+		key, value, ok = m.Last()
+		require.False(t, ok)
+		require.Zero(t, key)
+		require.Zero(t, value)
+	})
+
 	t.Run("DeleteFirst and DeleteLast take entries from the ends of the order", func(t *testing.T) {
 		m := newMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
 
@@ -423,6 +453,22 @@ func TestAccessOrderedMap(t *testing.T) {
 		require.Equal(t, 1, deleted)
 		require.Equal(t, []string{"c", "b", "a"}, seen)
 		require.Equal(t, []pair{{"b", 2}, {"a", 1}}, pairs(m))
+	})
+
+	t.Run("First and Last do not count as a use", func(t *testing.T) {
+		m := newAccessOrderedMap(pair{"a", 1}, pair{"b", 2}, pair{"c", 3})
+
+		key, value, ok := m.First()
+		require.True(t, ok)
+		require.Equal(t, "c", key)
+		require.Equal(t, 3, value)
+
+		key, value, ok = m.Last()
+		require.True(t, ok)
+		require.Equal(t, "a", key)
+		require.Equal(t, 1, value)
+
+		require.Equal(t, []pair{{"c", 3}, {"b", 2}, {"a", 1}}, pairs(m))
 	})
 
 	t.Run("DeleteLast evicts the least recently used entry", func(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian/v2/async"
+	"github.com/AndreySenov/meridian/v3/async"
 )
 
 func TestPromise(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/AndreySenov/meridian/v2/async"
+	"github.com/AndreySenov/meridian/v3/async"
 )
 
 func ExampleSingleFlight_Do() {

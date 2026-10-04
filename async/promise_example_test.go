@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AndreySenov/meridian/v2/async"
+	"github.com/AndreySenov/meridian/v3/async"
 )
 
 func ExamplePromise() {

@@ -3,7 +3,7 @@ package linked_test
 import (
 	"fmt"
 
-	"github.com/AndreySenov/meridian/v2/linked"
+	"github.com/AndreySenov/meridian/v3/linked"
 )
 
 func ExampleList() {

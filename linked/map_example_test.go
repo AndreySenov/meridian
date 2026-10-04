@@ -134,13 +134,13 @@ func ExampleMap_Last() {
 	key, value, _ := cache.Last()
 	fmt.Println("next to evict:", key, value)
 
-	firstKey, _, _ := cache.First()
-	fmt.Println("most recently used:", firstKey)
+	key, value, _ = cache.First()
+	fmt.Println("most recently used:", key, value)
 
 	fmt.Println(slices.Collect(cache.Keys()))
 	// Output:
 	// next to evict: a 1
-	// most recently used: b
+	// most recently used: b 2
 	// [b a]
 }
 

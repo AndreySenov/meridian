@@ -219,8 +219,8 @@ func (l *List[E]) PushBackList(other *List[E]) {
 }
 
 // Remove removes target from the list. The node is detached afterwards:
-// its Previous and Next return nil, and the list treats it as foreign, so
-// removing it again is a no-op. Its Value stays readable.
+// its [Node.Previous] and [Node.Next] return nil, and the list treats it as
+// foreign, so removing it again is a no-op. Its [Node.Value] stays readable.
 func (l *List[E]) Remove(target *Node[E]) {
 	l.check()
 	if l.retains(target) {

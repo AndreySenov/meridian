@@ -8,7 +8,8 @@ import "iter"
 // stored first to the entry stored last.
 // An access-ordered map, returned by [NewAccessOrderedMap], iterates
 // from the most recently used entry to the least recently used one,
-// where both Load and Store count as a use; maps with this order suit LRU caches.
+// where both [Map.Load] and [Map.Store] count as a use; maps with this order
+// suit LRU caches.
 //
 // The zero value for Map is an empty insertion-ordered map ready to use.
 // Like a map, a Map is a reference to shared data once in use: copies of it
@@ -135,7 +136,7 @@ func (m *Map[K, V]) DeleteFunc(del func(key K, value V) bool) (deleted int) {
 
 // First returns the first entry according to the map's order - the entry
 // stored first, or the most recently used one in an access-ordered map.
-// Unlike Load, it never counts as a use, so it leaves the order alone. It
+// Unlike [Map.Load], it never counts as a use, so it leaves the order alone. It
 // reports false with zero values if the map is empty.
 func (m *Map[K, V]) First() (key K, value V, ok bool) {
 	m.init()
@@ -154,7 +155,7 @@ func (m *Map[K, V]) First() (key K, value V, ok bool) {
 
 // Last returns the last entry according to the map's order - the entry
 // stored last, or the least recently used one, which makes it the eviction
-// candidate of an LRU cache. Unlike Load, it never counts as a use, so it
+// candidate of an LRU cache. Unlike [Map.Load], it never counts as a use, so it
 // leaves the order alone. It reports false with zero values if the map is
 // empty.
 func (m *Map[K, V]) Last() (key K, value V, ok bool) {

@@ -9,8 +9,8 @@ import (
 )
 
 // Promise is the writable side of an asynchronous result: it is
-// completed at most once, and the outcome is delivered to every Future
-// handle created from it. Create a Promise with NewPromise and use it by
+// completed at most once, and the outcome is delivered to every [Future]
+// handle created from it. Create a Promise with [NewPromise] and use it by
 // pointer; copying a Promise is unsafe.
 type Promise[T any] struct {
 	state        *promiseState[T]
@@ -18,7 +18,7 @@ type Promise[T any] struct {
 	completeOnce sync.Once
 }
 
-// NewPromise returns a new, pending Promise.
+// NewPromise returns a new, pending [Promise].
 func NewPromise[T any]() *Promise[T] {
 	return new(Promise[T])
 }
@@ -35,22 +35,22 @@ type promiseState[T any] struct {
 }
 
 // Resolve completes the Promise successfully with value.
-// It is equivalent to Complete(value, nil).
+// It is equivalent to [Promise.Complete](value, nil).
 func (p *Promise[T]) Resolve(value T) {
 	p.Complete(value, nil)
 }
 
 // Reject completes the Promise with err.
-// It is equivalent to Complete with a zero value and err.
+// It is equivalent to [Promise.Complete] with a zero value and err.
 func (p *Promise[T]) Reject(err error) {
 	var zero T
 	p.Complete(zero, err)
 }
 
 // Complete completes the Promise with value and err, then runs the handlers
-// registered with Future.OnComplete. Only the first completion takes effect:
-// later calls to Complete, Resolve, or Reject are no-ops. Safe for
-// concurrent use.
+// registered with [Future.OnComplete]. Only the first completion takes
+// effect: later calls to Complete, [Promise.Resolve], or [Promise.Reject] are
+// no-ops. Safe for concurrent use.
 func (p *Promise[T]) Complete(value T, err error) {
 	p.init()
 

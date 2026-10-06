@@ -10,10 +10,11 @@ import (
 var errGoexit = errors.New("runtime.Goexit was called in task")
 
 // SingleFlight deduplicates concurrent work by key: while a task for a key
-// is in flight, every Do call with that key joins it and receives the same
-// result instead of running its own task. The zero value is ready to use.
+// is in flight, every [SingleFlight.Do] call with that key joins it and
+// receives the same result instead of running its own task. The zero value
+// is ready to use.
 //
-// It is a typed alternative to golang.org/x/sync/singleflight: keys and
+// It is a typed alternative to [golang.org/x/sync/singleflight]: keys and
 // values are generic rather than string and interface{}, so results need no
 // type assertions. Each consumer gets a [Future] that it can await under its
 // own context. A panicking task is reported to every consumer as a regular error.
@@ -32,8 +33,8 @@ type SingleFlightFunc[V any] func(ctx context.Context) (V, error)
 // Do returns a [Future] for the result of the task, either starting the task
 // in a new goroutine or joining the in-flight call for the key if one
 // exists. [Future.IsShared] indicates whether the result is shared by multiple consumers.
-// The task runs to completion even if every consumer stops waiting; only Cancel
-// asks it to stop.
+// The task runs to completion even if every consumer stops waiting; only
+// [SingleFlight.Cancel] asks it to stop.
 // A panic inside the task is recovered and delivered to all consumers as an
 // error; a task that terminates its goroutine with [runtime.Goexit] also
 // yields an error instead of blocking the consumers.
@@ -85,10 +86,10 @@ func (s *SingleFlight[K, V]) Do(key K, task SingleFlightFunc[V]) Future[V] {
 	return f.promise.Future()
 }
 
-// Cancel cancels the context of the current call for the key and detaches it,
-// so later Do calls for the key start a fresh task. Every consumer receives
-// [context.Canceled], unless the call completes first. It reports whether a
-// call was in flight.
+// Cancel cancels the context of the current call for the key and detaches
+// it, so later [SingleFlight.Do] calls for the key start a fresh task. Every
+// consumer receives [context.Canceled], unless the call completes first. It
+// reports whether a call was in flight.
 //
 // The task itself is only asked to stop: one that honors its context returns
 // early, while one that ignores it runs to completion with its result
@@ -116,7 +117,7 @@ func (s *SingleFlight[K, V]) Cancel(key K) bool {
 
 // Forget detaches the current call for the key, if any, without
 // interrupting it: consumers already waiting still receive its result, while
-// later Do calls for the key start a fresh task.
+// later [SingleFlight.Do] calls for the key start a fresh task.
 func (s *SingleFlight[K, V]) Forget(key K) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

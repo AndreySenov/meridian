@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian/v3/linked"
+	"github.com/AndreySenov/meridian/v4/linked"
 )
 
 // copyList returns a shallow copy of l made through reflection, which the

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/AndreySenov/meridian/v3/linked"
+	"github.com/AndreySenov/meridian/v4/linked"
 )
 
 // Promise is the writable side of an asynchronous result: it is

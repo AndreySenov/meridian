@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/AndreySenov/meridian/v3/linked"
+	"github.com/AndreySenov/meridian/v4/linked"
 )
 
 type pair struct {

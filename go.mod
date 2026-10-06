@@ -1,4 +1,4 @@
-module github.com/AndreySenov/meridian/v3
+module github.com/AndreySenov/meridian/v4
 
 go 1.26
 

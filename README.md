@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/AndreySenov/meridian/actions/workflows/default.yml/badge.svg)](https://github.com/AndreySenov/meridian/actions)
 [![Latest Release](https://img.shields.io/github/v/release/AndreySenov/meridian?color=00ADD8)](https://github.com/AndreySenov/meridian/releases)
 [![License](https://img.shields.io/github/license/AndreySenov/meridian?color=00ADD8)](LICENSE)
-[![Go Reference](https://pkg.go.dev/badge/github.com/AndreySenov/meridian/v3.svg)](https://pkg.go.dev/github.com/AndreySenov/meridian/v3)
+[![Go Reference](https://pkg.go.dev/badge/github.com/AndreySenov/meridian/v4.svg)](https://pkg.go.dev/github.com/AndreySenov/meridian/v4)
 
 A Go library of concurrency and collection utilities.
 
@@ -17,21 +17,21 @@ A Go library of concurrency and collection utilities.
 Run the `go get` command to install Meridian:
 
 ```sh
-go get github.com/AndreySenov/meridian/v3
+go get github.com/AndreySenov/meridian/v4
 ```
 
 Use the `-u` flag to update Meridian to the latest version:
 
 ```sh
-go get -u github.com/AndreySenov/meridian/v3
+go get -u github.com/AndreySenov/meridian/v4
 ```
 
 Then import the package you need:
 
 ```go
 import (
-	"github.com/AndreySenov/meridian/v3/async"
-	"github.com/AndreySenov/meridian/v3/linked"
+	"github.com/AndreySenov/meridian/v4/async"
+	"github.com/AndreySenov/meridian/v4/linked"
 )
 ```
 
@@ -134,7 +134,7 @@ put := func(key string, value int) {
 
 ## Documentation
 
-See the [package documentation](https://pkg.go.dev/github.com/AndreySenov/meridian/v3) for the full API reference.
+See the [package documentation](https://pkg.go.dev/github.com/AndreySenov/meridian/v4) for the full API reference.
 
 ## License
 
